@@ -1,0 +1,31 @@
+[package]
+name = "interactsh-rs"
+version = "0.1.0-alpha+001"
+edition = "2021"
+authors = ["Matt George <pyroraptor07@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "A Rust client for working with Interact.sh servers"
+readme = "README.md"
+
+
+# LATER TODOS:
+# - add tracing crate as optional feature
+
+[features]
+default = ["rsa-crate", "reqwest-rustls"]
+openssl = ["dep:openssl"]
+openssl-vendored = ["openssl?/vendored"]
+rsa-crate = ["dep:rsa"]
+reqwest-native-tls = ["reqwest/default-tls"]
+reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
+reqwest-rustls = ["reqwest/rustls-tls"]
+
+[dependencies]
+cfg-if = "1"
+openssl = { version = "0.10", optional = true }
+reqwest = { version = "0.11", default-features = false, features = ["json"] }
+rsa = { version = "0.6", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.21", default-features = false, features = ["macros", "rt"] }
+uuid = "1.1"
