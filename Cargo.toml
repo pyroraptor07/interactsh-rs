@@ -8,24 +8,38 @@ description = "A Rust client for working with Interact.sh servers"
 readme = "README.md"
 
 
-# LATER TODOS:
-# - add tracing crate as optional feature
-
 [features]
-default = ["rsa-crate", "reqwest-rustls"]
+default = ["rustcrypto", "reqwest-rustls-tls"]
+
+# Crypto features
 openssl = ["dep:openssl"]
 openssl-vendored = ["openssl?/vendored"]
-rsa-crate = ["dep:rsa"]
+rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode"]
+wincrypto = ["dep:win-crypto-ng"]
+
+# Reqwest features
 reqwest-native-tls = ["reqwest/default-tls"]
 reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
-reqwest-rustls = ["reqwest/rustls-tls"]
+reqwest-rustls-tls = ["reqwest/rustls-tls"]
+
+# Other features
+trace = ["dep:tracing"]
+
 
 [dependencies]
 cfg-if = "1"
-openssl = { version = "0.10", optional = true }
 reqwest = { version = "0.11", default-features = false, features = ["json"] }
-rsa = { version = "0.6", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.21", default-features = false, features = ["macros", "rt"] }
+tracing = { version = "0.1", optional = true }
 uuid = "1.1"
+
+# RustCrypto dependencies
+aes = { version = "0.8.1", optional = true }
+cfb-mode = { version = "0.8.2", optional = true }
+rsa = { version = "0.6.1", optional = true }
+
+# Native crypto dependencies
+openssl = { version = "0.10.41", optional = true }
+win-crypto-ng = { version = "0.4.0", optional = true }
