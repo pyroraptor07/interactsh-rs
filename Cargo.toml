@@ -9,13 +9,12 @@ readme = "README.md"
 
 
 [features]
-default = ["rustcrypto", "reqwest-rustls-tls"]
+default = ["rustcrypto", "reqwest-rustls-tls", "openssl"]
 
 # Crypto features
 openssl = ["dep:openssl"]
 openssl-vendored = ["openssl?/vendored"]
-rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode"]
-wincrypto = ["dep:win-crypto-ng"]
+rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest"]
 
 # Reqwest features
 reqwest-native-tls = ["reqwest/default-tls"]
@@ -28,6 +27,7 @@ trace = ["dep:tracing"]
 
 [dependencies]
 cfg-if = "1"
+rand = "0.8.5"
 reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -38,8 +38,9 @@ uuid = "1.1"
 # RustCrypto dependencies
 aes = { version = "0.8.1", optional = true }
 cfb-mode = { version = "0.8.2", optional = true }
+digest = { version = "0.10.5", optional = true }
 rsa = { version = "0.6.1", optional = true }
+sha2 = { version = "0.10.6", optional = true }
 
 # Native crypto dependencies
 openssl = { version = "0.10.41", optional = true }
-win-crypto-ng = { version = "0.4.0", optional = true }
