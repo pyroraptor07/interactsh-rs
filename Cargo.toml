@@ -9,7 +9,7 @@ readme = "README.md"
 
 
 [features]
-default = ["rustcrypto", "reqwest-rustls-tls", "openssl"]
+default = ["rustcrypto", "reqwest-rustls-tls"]
 
 # Crypto features
 openssl = ["dep:openssl"]
