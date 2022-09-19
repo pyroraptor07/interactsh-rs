@@ -15,8 +15,14 @@ pub struct RSAPubKey {
 }
 
 impl RSAPubKey {
-    pub fn b64_encode(self) -> String {
-        todo!()
+    pub fn b64_encode(&self) -> Result<String, String> {
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "rustcrypto")] {
+                rustcrypto_fns::encode_public_key(&self.rustcrypto_pubkey)
+            } else if #[cfg(feature = "openssl")] {
+                openssl_fns::encode_public_key(&self.openssl_pubkey)
+            } 
+        }
     }
 }
 
@@ -72,7 +78,7 @@ impl RSAPrivKey {
 mod rustcrypto_fns {
     use digest::DynDigest;
     use rand::thread_rng;
-    use rsa::padding::PaddingScheme;
+    use rsa::{padding::PaddingScheme, pkcs8::{EncodePublicKey, LineEnding}};
 
     use super::*;
 
@@ -108,6 +114,15 @@ mod rustcrypto_fns {
         let pub_key = priv_key.to_public_key();
 
         Ok(RSAPubKey { rustcrypto_pubkey: pub_key })
+    }
+
+    pub(super) fn encode_public_key(pub_key: &RsaPublicKey) -> Result<String, String> {
+        let pub_key_pem = pub_key.to_public_key_pem(LineEnding::LF)
+            .map_err(|e| format!("Error: {}", e))?;
+
+        let pub_key_b64 = base64::encode(pub_key_pem);
+
+        Ok(pub_key_b64)
     }
 }
 
@@ -174,5 +189,14 @@ mod openssl_fns {
             .map_err(|e| format!("Error: {}", e))?;
 
         Ok(RSAPubKey { openssl_pubkey: pkey_pub_key })
+    }
+
+    pub(super) fn encode_public_key(pub_key: &PKeyRef<Public>) -> Result<String, String> {
+        let pub_key_pem = pub_key.public_key_to_pem()
+            .map_err(|e| format!("Error: {}", e))?;
+
+        let pub_key_b64 = base64::encode(pub_key_pem);
+
+        Ok(pub_key_b64)
     }
 }
