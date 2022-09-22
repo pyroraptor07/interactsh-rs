@@ -7,6 +7,7 @@ use openssl::pkey::{Private, Public, PKey};
 use super::hash::Sha2HashAlgo;
 
 
+/// Wrapper struct for the RSA public key
 pub struct RSAPubKey {
     #[cfg(feature = "rustcrypto")]
     rustcrypto_pubkey: RsaPublicKey,
@@ -15,6 +16,7 @@ pub struct RSAPubKey {
 }
 
 impl RSAPubKey {
+    /// Encodes the public key as a base 64 encoded string
     pub fn b64_encode(&self) -> Result<String, String> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
@@ -26,6 +28,7 @@ impl RSAPubKey {
     }
 }
 
+/// Wrapper struct for the RSA private key
 pub struct RSAPrivKey {
     #[cfg(feature = "rustcrypto")]
     rustcrypto_privkey: RsaPrivateKey,
@@ -34,6 +37,10 @@ pub struct RSAPrivKey {
 }
 
 impl RSAPrivKey {
+    /// Generates a new RSA private key with the provided number of bits
+    /// 
+    /// Note: when using the "rustcrypto" feature in the debug build profile,
+    /// this function can take some time (depending on the number of bits).
     pub fn generate(num_bits: usize) -> Result<Self, String> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
@@ -44,6 +51,7 @@ impl RSAPrivKey {
         }
     }
 
+    /// Extracts the public key from the generated private key
     pub fn get_pub_key(&self) -> Result<RSAPubKey, String> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
@@ -54,6 +62,7 @@ impl RSAPrivKey {
         }
     }
 
+    /// Decrypts the provided data using the provided SHA2 hash algorithm
     pub fn decrypt_data(&self, hash_algorithm: &Sha2HashAlgo, encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
@@ -198,5 +207,32 @@ mod openssl_fns {
         let pub_key_b64 = base64::encode(pub_key_pem);
 
         Ok(pub_key_b64)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rsa_private_key_generates_successfully_with_2048_bits() {
+        let _rsa_private_key = RSAPrivKey::generate(2048).expect("RSA private key generation failed with 2048 bits");
+    }
+
+    #[test]
+    fn rsa_public_key_extraction_works_successfully() {
+        let rsa_private_key = RSAPrivKey::generate(2048).expect("RSA private key generation failed with 2048 bits");
+
+        let _rsa_public_key = rsa_private_key.get_pub_key().expect("Failed to extract the public key");
+    }
+
+    #[test]
+    fn rsa_public_key_b64_encode_works_successfully() {
+        let rsa_private_key = RSAPrivKey::generate(2048).expect("RSA private key generation failed with 2048 bits");
+
+        let rsa_public_key = rsa_private_key.get_pub_key().expect("Failed to extract the public key");
+
+        let _encoded_public_key = rsa_public_key.b64_encode().expect("Failed to encode the public key");
     }
 }

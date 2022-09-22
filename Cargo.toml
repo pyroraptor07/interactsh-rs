@@ -13,12 +13,12 @@ default = ["rustcrypto", "reqwest-rustls-tls"]
 
 # Crypto features
 openssl = ["dep:openssl"]
-openssl-vendored = ["openssl?/vendored"]
+openssl-vendored = ["openssl", "openssl?/vendored"]
 rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest"]
 
 # Reqwest features
 reqwest-native-tls = ["reqwest/default-tls"]
-reqwest-native-tls-vendored = ["reqwest/native-tls-vendored"]
+reqwest-native-tls-vendored = ["reqwest-native-tls", "reqwest/native-tls-vendored"]
 reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
 # Other features
