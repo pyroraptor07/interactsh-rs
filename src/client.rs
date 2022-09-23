@@ -1,9 +1,10 @@
-//! Defines the client struct used for communicating with the interactsh servers.
+//! Defines the client struct used for communicating with the Interactsh servers.
 
 use rand::seq::SliceRandom;
 
 use crate::crypto::rsa::RSAPrivKey;
 
+/// The default list of servers provided by the Interactsh team
 const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     "oast.pro",
     "oast.live",
@@ -13,6 +14,7 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     "oast.me",
 ];
 
+/// Builder for the [Client] struct
 pub struct ClientBuilder {
     rsa_key: Option<RSAPrivKey>,
     server: Option<String>,
@@ -20,6 +22,7 @@ pub struct ClientBuilder {
 }
 
 impl ClientBuilder {
+    /// Create a new builder with no options defined
     pub fn new() -> Self {
         Self {
             rsa_key: None,
@@ -28,6 +31,11 @@ impl ClientBuilder {
         }
     }
 
+    /// Create a new builder with the default options
+    /// 
+    /// This will create a builder with a 2048 bit RSA key, no auth token, and server randomly picked from the
+    /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server) 
+    /// provided and maintained by the Interactsh team.
     pub fn default() -> Result<Self, String> {
         let rsa_key = RSAPrivKey::generate(2048)?;
         let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng()).expect("Unable to pick a server from the default list!");

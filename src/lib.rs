@@ -1,4 +1,5 @@
 #![allow(unused)] // REMOVE BEFORE PUBLISHING
+#![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
 
 // Compile time feature checks
 #[cfg(not(any(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls")))]

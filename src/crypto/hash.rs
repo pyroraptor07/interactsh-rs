@@ -25,7 +25,7 @@ pub struct Sha2HashAlgo {
 }
 
 impl Sha2HashAlgo {
-    /// Create a new Sha2HashAlgo struct for the given SHA2 has algorithm
+    /// Create a new Sha2HashAlgo struct for the given SHA2 hash algorithm
     pub fn new(algo_type: Sha2HashAlgoType) -> Self {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {

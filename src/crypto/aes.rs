@@ -1,4 +1,4 @@
-//! Defines the functions necessary for decrypting AES-encrypted data returned by the interactsh servers.
+//! Defines the functions necessary for decrypting AES-encrypted data returned by the Interactsh servers.
 
 /// Decrypt the provided data using the provided plain-text AES key
 pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, String> {

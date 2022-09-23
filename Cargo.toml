@@ -23,6 +23,7 @@ reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
 # Other features
 trace = ["dep:tracing"]
+nightly = []
 
 
 [dependencies]
@@ -49,3 +50,6 @@ openssl = { version = "0.10.41", optional = true }
 [dev-dependencies]
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
 async-std = { version = "1", features = ["tokio1", "attributes"] }
+
+[build-dependencies]
+rustversion = "1"
