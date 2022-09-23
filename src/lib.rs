@@ -7,6 +7,8 @@ compile_error!("One of the following features MUST be enabled:\n- \"reqwest-rust
 #[cfg(not(any(feature = "rustcrypto", feature = "openssl")))]
 compile_error!("One of the following features MUST be enabled:\n- \"rustcrypto\"\n- \"openssl\"\n");
 
+#[cfg(any(feature = "rustcrypto", feature = "openssl"))]
+pub mod crypto;
 
-mod crypto;
-mod client;
+#[cfg(any(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))]
+pub mod client;
