@@ -1,2 +1,2 @@
 # interactsh-rs
-A Rust client for working with Interact.sh servers.
+A Rust client library for working with Interact.sh servers.

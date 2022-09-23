@@ -4,7 +4,7 @@ version = "0.1.0-alpha+001"
 edition = "2021"
 authors = ["Matt George <pyroraptor07@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "A Rust client for working with Interact.sh servers"
+description = "A Rust client library for working with Interact.sh servers"
 readme = "README.md"
 
 
