@@ -1,5 +1,6 @@
+//! Defines the functions necessary for decrypting AES-encrypted data returned by the interactsh servers.
 
-
+/// Decrypt the provided data using the provided plain-text AES key
 pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "rustcrypto")] {
@@ -10,7 +11,7 @@ pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, St
     }
 }
 
-
+/// Decrypt the provided data using the provided plain-text AES key (using RustCrypto libraries)
 #[cfg(feature = "rustcrypto")]
 fn rustcrypto_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
     use aes::cipher::{KeyIvInit, AsyncStreamCipher};
@@ -27,6 +28,7 @@ fn rustcrypto_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, 
 }
 
 
+/// Decrypt the provided data using the provided plain-text AES key (using the OpenSSL library)
 #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
 fn openssl_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, String> {
     let iv = &encrypted_data[0..16];

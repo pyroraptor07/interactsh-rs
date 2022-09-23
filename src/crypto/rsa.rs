@@ -1,3 +1,6 @@
+//! Defines the wrapper structs and functions exposing the RSA key functionality needed
+//! by the interactsh-rs client.
+
 #[cfg(feature = "rustcrypto")]
 use rsa::{RsaPrivateKey, RsaPublicKey};
 
@@ -85,12 +88,15 @@ impl RSAPrivKey {
 
 #[cfg(feature = "rustcrypto")]
 mod rustcrypto_fns {
+    //! RustCrypto-specific RSA functions
+
     use digest::DynDigest;
     use rand::thread_rng;
     use rsa::{padding::PaddingScheme, pkcs8::{EncodePublicKey, LineEnding}};
 
     use super::*;
 
+    /// Generates a new RSA private key with the provided number of bits
     pub(super) fn get_rsa(num_bits: usize) -> Result<RSAPrivKey, String> {
         let rustcrypto_privkey = RsaPrivateKey::new(&mut thread_rng(), num_bits)
             .map_err(|e| format!("Error: {}", e))?;
@@ -102,6 +108,7 @@ mod rustcrypto_fns {
         Ok(priv_key)
     }
     
+    /// Decrypts the provided data using the provided SHA2 hash algorithm and RSA private key
     pub(super) fn decrypt_data(
         priv_key: &RsaPrivateKey,
         hasher: Box::<dyn DynDigest>,
@@ -119,12 +126,14 @@ mod rustcrypto_fns {
         Ok(decrypted_bytes)
     }
 
+    /// Extracts the public key from the provided private key
     pub(super) fn get_public_key(priv_key: &RsaPrivateKey) -> Result<RSAPubKey, String> {
         let pub_key = priv_key.to_public_key();
 
         Ok(RSAPubKey { rustcrypto_pubkey: pub_key })
     }
 
+    /// Encodes the provided public key as a base 64 encoded string
     pub(super) fn encode_public_key(pub_key: &RsaPublicKey) -> Result<String, String> {
         let pub_key_pem = pub_key.to_public_key_pem(LineEnding::LF)
             .map_err(|e| format!("Error: {}", e))?;
@@ -137,6 +146,8 @@ mod rustcrypto_fns {
 
 #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
 mod openssl_fns {
+    //! OpenSSL-specific RSA functions
+
     use std::fmt::format;
 
     use openssl::md::MdRef;
@@ -147,6 +158,7 @@ mod openssl_fns {
 
     use super::*;
 
+    /// Generates a new RSA private key with the provided number of bits
     pub(super) fn get_rsa(num_bits: usize) -> Result<RSAPrivKey, String> {
         let num_bits = if num_bits <= u32::MAX as usize {
             num_bits as u32
@@ -166,6 +178,7 @@ mod openssl_fns {
         Ok(priv_key)
     }
     
+    /// Decrypts the provided data using the provided SHA2 hash algorithm and RSA private key
     pub(super) fn decrypt_data(
         priv_key: &PKeyRef<Private>,
         hasher: &MdRef,
@@ -187,6 +200,7 @@ mod openssl_fns {
         Ok(decrypted_data)
     }
 
+    /// Extracts the public key from the provided private key
     pub(super) fn get_public_key(priv_key: &PKeyRef<Private>) -> Result<RSAPubKey, String> {
         let pub_key_pem = priv_key.public_key_to_pem()
             .map_err(|e| format!("Error: {}", e))?;
@@ -200,6 +214,7 @@ mod openssl_fns {
         Ok(RSAPubKey { openssl_pubkey: pkey_pub_key })
     }
 
+    /// Encodes the provided public key as a base 64 encoded string
     pub(super) fn encode_public_key(pub_key: &PKeyRef<Public>) -> Result<String, String> {
         let pub_key_pem = pub_key.public_key_to_pem()
             .map_err(|e| format!("Error: {}", e))?;

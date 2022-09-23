@@ -31,10 +31,10 @@ cfg-if = "1"
 rand = "0.8.5"
 reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-tokio = { version = "1.21", default-features = false, features = ["macros", "rt"] }
+serde_json = "1"
+# tokio = { version = "1.21", default-features = false, features = ["macros", "rt"] }
 tracing = { version = "0.1", optional = true }
-uuid = "1.1"
+uuid = "1"
 
 # RustCrypto dependencies
 aes = { version = "0.8.1", optional = true }
@@ -45,3 +45,7 @@ sha2 = { version = "0.10.6", optional = true }
 
 # Native crypto dependencies
 openssl = { version = "0.10.41", optional = true }
+
+[dev-dependencies]
+tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
+async-std = { version = "1", features = ["tokio1", "attributes"] }

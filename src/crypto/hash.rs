@@ -1,9 +1,12 @@
+//! Defines the SHA2 hash algorithm wrapper types used by the RSA keys.
+
 #[cfg(feature = "rustcrypto")]
 use digest::DynDigest;
 
 #[cfg(feature = "openssl")]
 use openssl::md::{Md, MdRef};
 
+/// Enum for the SHA2 hash algorithm types that are supported
 pub enum Sha2HashAlgoType {
     Sha224,
     Sha256,
@@ -12,6 +15,7 @@ pub enum Sha2HashAlgoType {
 }
 
 
+/// Wrapper struct around the SHA2 hash algorithm types used by the RustCrypto and OpenSSL crates
 pub struct Sha2HashAlgo {
     #[cfg(feature = "rustcrypto")]
     rustcrypto_hash: Box<dyn DynDigest>,
@@ -20,7 +24,8 @@ pub struct Sha2HashAlgo {
     openssl_hash: &'static MdRef,
 }
 
-impl Sha2HashAlgo {    
+impl Sha2HashAlgo {
+    /// Create a new Sha2HashAlgo struct for the given SHA2 has algorithm
     pub fn new(algo_type: Sha2HashAlgoType) -> Self {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
@@ -39,17 +44,20 @@ impl Sha2HashAlgo {
         }
     }
 
+    /// Return the associated RustCrypto SHA2 hash algorithm type
     #[cfg(feature = "rustcrypto")]
     pub fn get_rustcrypto_hash(&self) -> Box<dyn DynDigest> {
         Box::clone(&self.rustcrypto_hash)
     }
 
+    /// Return the associated OpenSSL SHA2 hash algorithm type
     #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
     pub fn get_openssl_hash(&self) -> &'static MdRef {
         self.openssl_hash
     }
 }
 
+/// Return the associated RustCrypto SHA2 hash algorithm type
 #[cfg(feature = "rustcrypto")]
 fn rustcrypto_get_sha2(algo_type: Sha2HashAlgoType) -> Box<dyn DynDigest> {
     match algo_type {
@@ -60,6 +68,7 @@ fn rustcrypto_get_sha2(algo_type: Sha2HashAlgoType) -> Box<dyn DynDigest> {
     }
 }
 
+/// Return the associated OpenSSL SHA2 hash algorithm type
 #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
 fn openssl_get_sha2(algo_type: Sha2HashAlgoType) -> &'static MdRef {
     match algo_type {
