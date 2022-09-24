@@ -22,6 +22,7 @@ reqwest-native-tls-vendored = ["reqwest-native-tls", "reqwest/native-tls-vendore
 reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
 # Other features
+async-compat = ["dep:async-compat"]
 trace = ["dep:tracing"]
 nightly = []
 
@@ -33,8 +34,6 @@ rand = "0.8.5"
 reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
-# tokio = { version = "1.21", default-features = false, features = ["macros", "rt"] }
-tracing = { version = "0.1", optional = true }
 uuid = "1"
 
 # RustCrypto dependencies
@@ -47,11 +46,14 @@ sha2 = { version = "0.10.6", optional = true }
 # Native crypto dependencies
 openssl = { version = "0.10.41", optional = true }
 
+# Other optional dependencies
+async-compat = { version = "0.2", optional = true }
+tracing = { version = "0.1", optional = true }
+
 [dev-dependencies]
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
-async-std = { version = "1", features = ["tokio1", "attributes"] }
+async-std = { version = "1", features = ["attributes"] }
 smol = "1"
-async-compat = "0.2"
 
 [build-dependencies]
 rustversion = "1"
