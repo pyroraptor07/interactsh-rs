@@ -1,5 +1,5 @@
 # Versioning
-This project uses the SevVer versioning format.
+This project uses the SemVer versioning format.
 
 Release version format: `[major].[minor].[patch]`
 
