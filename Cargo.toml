@@ -51,6 +51,7 @@ openssl = { version = "0.10.41", optional = true }
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
 async-std = { version = "1", features = ["tokio1", "attributes"] }
 smol = "1"
+async-compat = "0.2"
 
 [build-dependencies]
 rustversion = "1"
