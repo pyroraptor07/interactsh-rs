@@ -13,3 +13,5 @@ pub mod crypto;
 
 #[cfg(any(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))]
 pub mod client;
+
+pub mod errors;

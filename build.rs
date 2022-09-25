@@ -4,6 +4,10 @@ fn main() {
     if enable_nightly() {
         println!("cargo:rustc-cfg=feature=\"nightly\"");
     }
+
+    if cfg!(all(feature="rustcrypto", feature="openssl")) {
+        println!("cargo:warning=Both 'rustcrypto' and 'openssl' features are enabled - defaulting to 'rustcrypto'");
+    }
 }
 
 #[rustversion::nightly]

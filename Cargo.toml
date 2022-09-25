@@ -14,7 +14,7 @@ default = ["rustcrypto", "reqwest-rustls-tls"]
 # Crypto features
 openssl = ["dep:openssl"]
 openssl-vendored = ["openssl", "openssl?/vendored"]
-rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest"]
+rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest", "dep:inout"]
 
 # Reqwest features
 reqwest-native-tls = ["reqwest/default-tls"]
@@ -40,6 +40,7 @@ uuid = "1"
 aes = { version = "0.8.1", optional = true }
 cfb-mode = { version = "0.8.2", optional = true }
 digest = { version = "0.10.5", optional = true }
+inout = { version = "0.1.3", features = ["std"], optional = true }
 rsa = { version = "0.6.1", optional = true }
 sha2 = { version = "0.10.6", optional = true }
 
@@ -49,6 +50,7 @@ openssl = { version = "0.10.41", optional = true }
 # Other optional dependencies
 async-compat = { version = "0.2", optional = true }
 tracing = { version = "0.1", optional = true }
+thiserror = "1.0.36"
 
 [dev-dependencies]
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }

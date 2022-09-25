@@ -3,6 +3,7 @@
 use rand::seq::SliceRandom;
 
 use crate::crypto::rsa::RSAPrivKey;
+use crate::errors::ClientError;
 
 /// The default list of servers provided by the Interactsh team
 const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
@@ -36,7 +37,7 @@ impl ClientBuilder {
     /// This will create a builder with a 2048 bit RSA key, no auth token, and server randomly picked from the
     /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server) 
     /// provided and maintained by the Interactsh team.
-    pub fn default() -> Result<Self, String> {
+    pub fn default() -> Result<Self, ClientError> {
         let rsa_key = RSAPrivKey::generate(2048)?;
         let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng()).expect("Unable to pick a server from the default list!");
 
@@ -49,7 +50,7 @@ impl ClientBuilder {
         Ok(new_builder)
     }
 
-    pub fn with_rsa_key_size(self, num_bits: usize) -> Result<Self, String> {
+    pub fn with_rsa_key_size(self, num_bits: usize) -> Result<Self, ClientError> {
         let rsa_key = RSAPrivKey::generate(num_bits)?;
 
         let new_builder = Self {
@@ -74,7 +75,7 @@ impl ClientBuilder {
         }
     }
 
-    pub fn build(self) -> Result<Client, String> {
+    pub fn build(self) -> Result<Client, ClientError> {
 
 
 
@@ -111,15 +112,15 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn register(&mut self) -> Result<&RegisteredUrl, String> {
+    pub async fn register(&mut self) -> Result<&RegisteredUrl, ClientError> {
         todo!()
     }
 
-    pub async fn deregister(&mut self) -> Result<(), String> {
+    pub async fn deregister(&mut self) -> Result<(), ClientError> {
         todo!()
     }
 
-    pub async fn poll(&self) -> Result<Vec<LogEntry>, String> {
+    pub async fn poll(&self) -> Result<Vec<LogEntry>, ClientError> {
         todo!()
     }
 }
