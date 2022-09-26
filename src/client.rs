@@ -2,7 +2,6 @@
 
 use std::fmt::Display;
 use std::time::Duration;
-use std::vec;
 
 use rand::seq::SliceRandom;
 use reqwest::StatusCode;
