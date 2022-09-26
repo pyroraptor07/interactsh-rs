@@ -1,3 +1,6 @@
+//! The errors used within this library
+
+
 #[cfg(feature = "rustcrypto")]
 mod rustcrypto_errors;
 

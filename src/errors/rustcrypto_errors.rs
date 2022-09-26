@@ -1,11 +1,22 @@
+//! The error types used by the [crypto](crate::crypto) module when the
+//! `rustcrypto` feature is enabled
+
 use thiserror::Error;
 
 
 #[derive(Error, Debug)]
-#[error("Unable to decrypt data with provided AES key")]
-pub struct AesDecryptError {
-    #[from]
-    source: inout::NotEqualError,
+pub enum AesDecryptError {
+    #[error("Unable to decrypt data with provided AES key")]
+    DecryptFailure {
+        #[from]
+        source: inout::NotEqualError,
+    },
+
+    #[error("Failed to decode the data using base 64 encoding")]
+    DecodeFailure {
+        #[from]
+        source: base64::DecodeError,
+    }
 }
 
 

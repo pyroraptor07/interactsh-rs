@@ -38,6 +38,7 @@ impl RSAPubKey {
 }
 
 /// Wrapper struct for the RSA private key
+#[derive(Debug, Clone)]
 pub struct RSAPrivKey {
     #[cfg(feature = "rustcrypto")]
     rustcrypto_privkey: RsaPrivateKey,
@@ -72,7 +73,7 @@ impl RSAPrivKey {
     }
 
     /// Decrypts the provided data using the provided SHA2 hash algorithm
-    pub fn decrypt_data(&self, hash_algorithm: &Sha2HashAlgo, encrypted_data: &[u8]) -> Result<Vec<u8>, RsaDecryptError> {
+    pub fn decrypt_data(&self, hash_algorithm: Sha2HashAlgo, encrypted_data: &[u8]) -> Result<Vec<u8>, RsaDecryptError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::decrypt_data(

@@ -4,11 +4,13 @@ use crate::errors::AesDecryptError;
 
 /// Decrypt the provided data using the provided plain-text AES key
 pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, AesDecryptError> {
+    let decoded_data = base64::decode(encrypted_data)?;
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "rustcrypto")] {
-            rustcrypto_decrypt(aes_key, encrypted_data)
+            rustcrypto_decrypt(aes_key, &decoded_data)
         } else if #[cfg(feature = "openssl")] {
-            openssl_decrypt(aes_key, encrypted_data)
+            openssl_decrypt(aes_key, &decoded_data)
         } 
     }
 }

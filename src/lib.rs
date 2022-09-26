@@ -1,3 +1,7 @@
+//! # Interactsh-rs
+//! A Rust client library for working with Interact.sh servers.
+
+
 #![allow(unused)] // REMOVE BEFORE PUBLISHING
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
 
