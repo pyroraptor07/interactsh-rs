@@ -6,11 +6,9 @@ Release version format: `[major].[minor].[patch]`
 Prerelease version format: `[major].[minor].[patch]-[prerelease tag]`
 
 ## Prerelease stages
-- Alpha: active development of new features (prerelease tag: `alpha+[build date]B[build number]`)
-- Beta: feature set frozen, bug fixing and usability improvements (prerelease tag: `beta+[build date]B[build number]`)
+- Alpha: active development of new features (prerelease tag: `alpha`)
+- Beta: feature set frozen, bug fixing and usability improvements (prerelease tag: `beta`)
 - Release candidate: potentially stable, final bug ID and fixing (prerelease tag: `RC[release candidate number]`)
-
-Format for [build date]: yyyymmdd
 
 ## Version incrementing
 ### Before 1.0
