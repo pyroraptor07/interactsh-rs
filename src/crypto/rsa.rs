@@ -13,7 +13,6 @@ use crate::errors::{
     RsaGenError,
     RsaGetPubKeyError,
 };
-use super::hash::Sha2HashAlgo;
 
 
 /// Wrapper struct for the RSA public key
@@ -73,18 +72,16 @@ impl RSAPrivKey {
     }
 
     /// Decrypts the provided data using the provided SHA2 hash algorithm
-    pub fn decrypt_data(&self, hash_algorithm: Sha2HashAlgo, encrypted_data: &[u8]) -> Result<Vec<u8>, RsaDecryptError> {
+    pub fn decrypt_data(&self, encrypted_data: &[u8]) -> Result<Vec<u8>, RsaDecryptError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::decrypt_data(
                     &self.rustcrypto_privkey,
-                    hash_algorithm.get_rustcrypto_hash(),
                     encrypted_data,
                 )
             } else if #[cfg(feature = "openssl")] {
                 openssl_fns::decrypt_data(
                     &self.openssl_privkey,
-                    hash_algorithm.get_openssl_hash(),
                     encrypted_data,
                 )
             } 
@@ -116,9 +113,9 @@ mod rustcrypto_fns {
     /// Decrypts the provided data using the provided SHA2 hash algorithm and RSA private key
     pub(super) fn decrypt_data(
         priv_key: &RsaPrivateKey,
-        hasher: Box::<dyn DynDigest>,
         encrypted_data: &[u8]
     ) -> Result<Vec<u8>, RsaDecryptError> {
+        let hasher: Box<dyn DynDigest> = Box::new(sha2::Sha256::default());
         let padding = PaddingScheme::OAEP { 
             digest: Box::clone(&hasher), 
             mgf_digest: hasher,
@@ -150,9 +147,7 @@ mod rustcrypto_fns {
 mod openssl_fns {
     //! OpenSSL-specific RSA functions
 
-    use std::fmt::format;
-
-    use openssl::md::MdRef;
+    use openssl::md::Md;
     use openssl::rsa::Rsa;
     use openssl::pkey::PKeyRef;
     use openssl::pkey_ctx::PkeyCtx;
@@ -184,9 +179,9 @@ mod openssl_fns {
     /// Decrypts the provided data using the provided SHA2 hash algorithm and RSA private key
     pub(super) fn decrypt_data(
         priv_key: &PKeyRef<Private>,
-        hasher: &MdRef,
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, RsaDecryptError> {
+        let hasher = Md::sha256();
         let mut pkey_ctx = PkeyCtx::new(priv_key)?;
         pkey_ctx.decrypt_init()?;
         pkey_ctx.set_rsa_padding(Padding::PKCS1_OAEP)?;

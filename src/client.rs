@@ -3,16 +3,14 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use rand::Rng;
+// use rand::Rng;
 use rand::seq::SliceRandom;
 use reqwest::StatusCode;
 use uuid::Uuid;
-use serde_json::json;
 use svix_ksuid::*;
 
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::crypto::hash::{Sha2HashAlgo, Sha2HashAlgoType};
 use crate::errors::{ClientError, ClientBuildError, ProxyConvertError, ClientRegistrationError, ClientRegistrationInnerError};
 
 /// The default list of servers provided by the Interactsh team
@@ -403,27 +401,27 @@ impl UnregisteredClient {
 /// a new log.
 #[derive(Debug, serde::Deserialize)]
 pub struct LogEntry {
-    protocol: String,
+    pub protocol: String,
     
     #[serde(rename(deserialize = "unique-id"))]
-    unique_id: String,
+    pub unique_id: String,
 
     #[serde(rename(deserialize = "full-id"))]
-    full_id: String,
+    pub full_id: String,
 
     #[serde(rename(deserialize = "q-type"))]
-    q_type: Option<String>,
+    pub q_type: Option<String>,
 
     #[serde(rename(deserialize = "raw-request"))]
-    raw_request: String,
+    pub raw_request: String,
 
     #[serde(rename(deserialize = "raw-response"))]
-    raw_response: String,
+    pub raw_response: String,
 
     #[serde(rename(deserialize = "remote-address"))]
-    remote_address: String,
+    pub remote_address: String,
 
-    timestamp: String,
+    pub timestamp: String,
 }
 
 
@@ -438,6 +436,7 @@ struct PollResponse {
 
 /// The primary struct used to communicate with an
 /// Interactsh server.
+#[allow(unused)]
 pub struct Client {
     rsa_key: RSAPrivKey,
     server: String,
@@ -511,8 +510,7 @@ impl Client {
     }
 
     fn decrypt_data(&self, aes_key: &Vec<u8>, encrypted_data: &Vec<u8>) -> Result<String, ClientError> {
-        let hash_algorithm = Sha2HashAlgo::new(Sha2HashAlgoType::Sha256);
-        let aes_plain_key = self.rsa_key.decrypt_data(hash_algorithm, aes_key)?;
+        let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
 
         let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
 
