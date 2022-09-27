@@ -1,6 +1,9 @@
 //! The error types used by the [Client](crate::client::Client) and 
 //! [ClientBuilder](crate::client::ClientBuilder) structs
 
+#[cfg(feature = "nightly")]
+use std::backtrace::Backtrace;
+
 use thiserror::Error;
 
 
@@ -9,6 +12,8 @@ use thiserror::Error;
 pub struct ProxyConvertError {
     #[from]
     source: reqwest::Error,
+    #[cfg(feature = "nightly")]
+    backtrace: Backtrace,
 }
 
 
@@ -18,6 +23,8 @@ pub enum ClientRegistrationInnerError {
     RequestSendFailure {
         #[from]
         source: reqwest::Error,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Server returned an Unauthorized status code")]
@@ -45,16 +52,20 @@ pub enum ClientBuildError {
     InvalidProxy {
         #[from]
         source: ProxyConvertError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Builder failed to generate the RSA private key")]
     RsaGen {
         #[from]
         source: super::RsaGenError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
-    #[error("RSA private key was not set")]
-    MissingRsaKey,
+    #[error("RSA key size was not set")]
+    MissingRsaKeySize,
 
     #[error("Interactsh server was not set")]
     MissingServer,
@@ -63,18 +74,24 @@ pub enum ClientBuildError {
     PubKeyExtract {
         #[from]
         source: super::RsaGetPubKeyError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Failed to encode the RSA public key")]
     PubKeyEncode {
         #[from]
         source: super::RsaEncodePubKeyError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Failed to build the reqwest client")]
     ReqwestBuildFailed {
         #[from]
         source: reqwest::Error,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 }
 
@@ -89,6 +106,8 @@ pub enum ClientError {
     PollFailure {
         #[from]
         source: reqwest::Error,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Interactsh server returned error status - {status_code}: {server_msg}")]
@@ -101,11 +120,15 @@ pub enum ClientError {
     AesKeyDecryptFailed {
         #[from]
         source: super::RsaDecryptError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Failed to decrypt the received data")]
     DataDecryptFailed {
         #[from]
         source: super::AesDecryptError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     }
 }

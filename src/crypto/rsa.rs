@@ -188,6 +188,7 @@ mod openssl_fns {
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, RsaDecryptError> {
         let mut pkey_ctx = PkeyCtx::new(priv_key)?;
+        pkey_ctx.decrypt_init()?;
         pkey_ctx.set_rsa_padding(Padding::PKCS1_OAEP)?;
         pkey_ctx.set_rsa_oaep_md(hasher)?;
 

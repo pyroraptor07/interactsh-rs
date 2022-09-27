@@ -3,6 +3,7 @@
 use std::fmt::Display;
 use std::time::Duration;
 
+use rand::Rng;
 use rand::seq::SliceRandom;
 use reqwest::StatusCode;
 use uuid::Uuid;
@@ -21,7 +22,7 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     "oast.site",
     "oast.online",
     "oast.fun",
-    "oast.me",
+    // "oast.me",
 ];
 
 
@@ -97,7 +98,7 @@ impl ClientProxy {
 
 /// Builder for the [Client] struct
 pub struct ClientBuilder {
-    rsa_key: Option<RSAPrivKey>,
+    rsa_key_size: Option<usize>,
     server: Option<String>,
     auth_token: Option<AuthToken>,
     proxies: Option<Vec<ClientProxy>>,
@@ -109,7 +110,7 @@ impl ClientBuilder {
     /// Create a new builder with no options defined.
     pub fn new() -> Self {
         Self {
-            rsa_key: None,
+            rsa_key_size: None,
             server: None,
             auth_token: None,
             proxies: None,
@@ -125,11 +126,11 @@ impl ClientBuilder {
     /// provided and maintained by the Interactsh team. This will also set the timeout
     /// to 15 seconds and SSL verification to false.
     pub fn default() -> Result<Self, ClientBuildError> {
-        let rsa_key = RSAPrivKey::generate(2048)?;
+        // let rsa_key = RSAPrivKey::generate(2048)?;
         let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng()).expect("Unable to pick a server from the default list!");
 
         let new_builder = Self {
-            rsa_key: Some(rsa_key),
+            rsa_key_size: Some(2048),
             server: Some(server.to_string()),
             auth_token: None,
             proxies: None,
@@ -141,24 +142,31 @@ impl ClientBuilder {
     }
 
     /// Generate a new RSA private key for the [Client] to use of the bit size given.
-    pub fn gen_rsa_key(self, num_bits: usize) -> Result<Self, ClientBuildError> {
-        let rsa_key = RSAPrivKey::generate(num_bits)?;
+    // pub fn gen_rsa_key(self, num_bits: usize) -> Result<Self, ClientBuildError> {
+    //     let rsa_key = RSAPrivKey::generate(num_bits)?;
 
-        let new_builder = Self {
-            rsa_key: Some(rsa_key),
-            ..self
-        };
+    //     let new_builder = Self {
+    //         rsa_key: Some(rsa_key),
+    //         ..self
+    //     };
 
-        Ok(new_builder)
-    }
+    //     Ok(new_builder)
+    // }
 
-    /// Set a predefined RSA private key for the [Client] to use.
-    pub fn with_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
+    pub fn with_rsa_key_size(self, num_bits: usize) -> Self {
         Self {
-            rsa_key: Some(rsa_key),
+            rsa_key_size: Some(num_bits),
             ..self
         }
     }
+
+    /// Set a predefined RSA private key for the [Client] to use.
+    // pub fn with_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
+    //     Self {
+    //         rsa_key: Some(rsa_key),
+    //         ..self
+    //     }
+    // }
 
     /// Set the Interactsh server that the [Client] will connect to.
     pub fn with_server(self, server: String) -> Self {
@@ -228,14 +236,18 @@ impl ClientBuilder {
     /// a usable [Client].
     pub fn build(self) -> Result<UnregisteredClient, ClientBuildError> {
         // Ensure rsa_key and server are set
-        let rsa_key = self.rsa_key.ok_or(ClientBuildError::MissingRsaKey)?;
+        let rsa_key_size = self.rsa_key_size.ok_or(ClientBuildError::MissingRsaKeySize)?;
         let server = self.server.ok_or(ClientBuildError::MissingServer)?;
 
         // Get the other values needed
+        let rsa_key = RSAPrivKey::generate(rsa_key_size)?;
         let pubkey = rsa_key.get_pub_key()?;
         let secret = Uuid::new_v4().to_string();
         let encoded_pub_key = pubkey.b64_encode()?;
-        let sub_domain = Ksuid::new(None, None).to_string();
+        let ksuid_a = Ksuid::new(None, None).to_string().to_ascii_lowercase();
+        let ksuid_b = Ksuid::new(None, None).to_string().to_ascii_lowercase();
+        let mut sub_domain = format!("{}{}", ksuid_a, ksuid_b);
+        sub_domain.truncate(33);
 
         let mut correlation_id = sub_domain.clone();
         correlation_id.truncate(20);
@@ -285,6 +297,20 @@ impl ClientBuilder {
     }
 }
 
+
+#[derive(serde::Serialize, Debug)]
+struct RegisterData {
+    #[serde(rename(serialize = "public-key"))]
+    public_key: String,
+
+    #[serde(rename(serialize = "secret-key"))]
+    secret_key: String,
+
+    #[serde(rename(serialize = "correlation-id"))]
+    correlation_id: String,
+}
+
+
 #[derive(Debug, Clone)]
 pub struct UnregisteredClient {
     rsa_key: RSAPrivKey,
@@ -299,11 +325,11 @@ pub struct UnregisteredClient {
 
 impl UnregisteredClient {
     pub async fn register(self) -> Result<Client, ClientRegistrationError> {
-        let data = json!({
-            "public-key": self.encoded_pub_key.as_str(),
-            "secret-key": self.secret_key.as_str(),
-            "correlation-id": self.correlation_id.as_str()
-        });
+        let data = RegisterData {
+            public_key: self.encoded_pub_key.clone(),
+            secret_key: self.secret_key.clone(),
+            correlation_id: self.correlation_id.clone(),
+        };
 
         let register_url = format!("https://{}/register", self.server);
         let mut post_request = self.reqwest_client.post(register_url);
@@ -375,9 +401,29 @@ impl UnregisteredClient {
 /// 
 /// Returned when [Client] polls the server and receives
 /// a new log.
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 pub struct LogEntry {
-    pub log: String,
+    protocol: String,
+    
+    #[serde(rename(deserialize = "unique-id"))]
+    unique_id: String,
+
+    #[serde(rename(deserialize = "full-id"))]
+    full_id: String,
+
+    #[serde(rename(deserialize = "q-type"))]
+    q_type: Option<String>,
+
+    #[serde(rename(deserialize = "raw-request"))]
+    raw_request: String,
+
+    #[serde(rename(deserialize = "raw-response"))]
+    raw_response: String,
+
+    #[serde(rename(deserialize = "remote-address"))]
+    remote_address: String,
+
+    timestamp: String,
 }
 
 
@@ -451,22 +497,24 @@ impl Client {
         }
 
         let response_body = get_response.json::<PollResponse>().await?;
+        let aes_key_decoded = base64::decode(&response_body.aes_key).unwrap();
         
         let mut results = Vec::new();
         for data in response_body.data_list.iter() {
-            let decrypted_data = self.decrypt_data(&response_body.aes_key, data)?;
-            let log_entry = LogEntry { log: decrypted_data };
+            let data_decoded = base64::decode(data).unwrap();
+            let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
+            let log_entry = serde_json::from_str::<LogEntry>(decrypted_data.as_str()).unwrap();
             results.push(log_entry);
         }
 
         Ok(results)
     }
 
-    fn decrypt_data(&self, aes_key: &String, encrypted_data: &String) -> Result<String, ClientError> {
+    fn decrypt_data(&self, aes_key: &Vec<u8>, encrypted_data: &Vec<u8>) -> Result<String, ClientError> {
         let hash_algorithm = Sha2HashAlgo::new(Sha2HashAlgoType::Sha256);
-        let aes_plain_key = self.rsa_key.decrypt_data(hash_algorithm, aes_key.as_bytes())?;
+        let aes_plain_key = self.rsa_key.decrypt_data(hash_algorithm, aes_key)?;
 
-        let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data.as_bytes())?;
+        let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
 
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
 

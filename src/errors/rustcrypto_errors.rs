@@ -1,6 +1,9 @@
 //! The error types used by the [crypto](crate::crypto) module when the
 //! `rustcrypto` feature is enabled
 
+#[cfg(feature = "nightly")]
+use std::backtrace::Backtrace;
+
 use thiserror::Error;
 
 
@@ -10,12 +13,16 @@ pub enum AesDecryptError {
     DecryptFailure {
         #[from]
         source: inout::NotEqualError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     },
 
     #[error("Failed to decode the data using base 64 encoding")]
     DecodeFailure {
         #[from]
         source: base64::DecodeError,
+        #[cfg(feature = "nightly")]
+        backtrace: Backtrace,
     }
 }
 
@@ -25,6 +32,8 @@ pub enum AesDecryptError {
 pub struct RsaGenError {
     #[from]
     source: rsa::errors::Error,
+    #[cfg(feature = "nightly")]
+    backtrace: Backtrace,
 }
 
 
@@ -33,6 +42,8 @@ pub struct RsaGenError {
 pub struct RsaDecryptError {
     #[from]
     source: rsa::errors::Error,
+    #[cfg(feature = "nightly")]
+    backtrace: Backtrace,
 }
 
 
@@ -45,5 +56,7 @@ pub struct RsaGetPubKeyError;
 #[error("Failed to encode the RSA public key as a base 64 string")]
 pub struct RsaEncodePubKeyError {
     #[from]
-    source: rsa::pkcs8::spki::Error
+    source: rsa::pkcs8::spki::Error,
+    #[cfg(feature = "nightly")]
+    backtrace: Backtrace,
 }
