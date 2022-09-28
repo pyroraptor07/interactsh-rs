@@ -56,8 +56,6 @@ thiserror = "1.0.36"
 
 [dev-dependencies]
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
-async-std = { version = "1", features = ["attributes"] }
-smol = "1"
 
 [build-dependencies]
 rustversion = "1"
