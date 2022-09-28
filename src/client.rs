@@ -3,7 +3,7 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-// use rand::Rng;
+use async_compat::Compat;
 use rand::seq::SliceRandom;
 use reqwest::StatusCode;
 use uuid::Uuid;
@@ -338,10 +338,11 @@ impl UnregisteredClient {
             None => post_request,
         };
 
-        let register_response = post_request
-            .json(&data)
-            .send()
-            .await
+        let post_request_future = Compat::new(async {
+            post_request.json(&data).send().await
+        });
+
+        let register_response = post_request_future.await
             .map_err(|e| {
                 let inner_error = ClientRegistrationInnerError::from(e);
                 
@@ -481,7 +482,9 @@ impl Client {
             None => get_request,
         };
 
-        let get_response = get_request.send().await?;
+        let get_response = Compat::new(async {
+            get_request.send().await
+        }).await?;
         let status = &get_response.status();
 
         if !status.is_success() {
