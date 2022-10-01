@@ -30,6 +30,7 @@ pub struct UnregisteredClient {
     pub(crate) secret_key: String,
     pub(crate) encoded_pub_key: String,
     pub(crate) reqwest_client: reqwest::Client,
+    pub(crate) parse_logs: bool,
 }
 
 impl UnregisteredClient {
@@ -74,6 +75,7 @@ impl UnregisteredClient {
                     secret_key: self.secret_key,
                     encoded_pub_key: self.encoded_pub_key,
                     reqwest_client: self.reqwest_client,
+                    parse_logs: self.parse_logs,
                 };
 
                 Ok(new_reg_client)

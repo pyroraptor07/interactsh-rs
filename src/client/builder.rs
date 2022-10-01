@@ -44,6 +44,7 @@ pub struct ClientBuilder {
     proxies: Option<Vec<ClientProxy>>,
     timeout: Option<Duration>,
     ssl_verify: bool,
+    parse_logs: bool,
 }
 
 impl ClientBuilder {
@@ -56,6 +57,7 @@ impl ClientBuilder {
             proxies: None,
             timeout: None,
             ssl_verify: false,
+            parse_logs: true,
         }
     }
 
@@ -65,8 +67,7 @@ impl ClientBuilder {
     /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server) 
     /// provided and maintained by the Interactsh team. This will also set the timeout
     /// to 15 seconds and SSL verification to false.
-    pub fn default() -> Result<Self, ClientBuildError> {
-        // let rsa_key = RSAPrivKey::generate(2048)?;
+    pub fn default() -> Self {
         let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng()).expect("Unable to pick a server from the default list!");
 
         let new_builder = Self {
@@ -76,9 +77,10 @@ impl ClientBuilder {
             proxies: None,
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,
+            parse_logs: true,
         };
 
-        Ok(new_builder)
+        new_builder
     }
 
     /// Generate a new RSA private key for the [Client] to use of the bit size given.
@@ -167,6 +169,15 @@ impl ClientBuilder {
         }
     }
 
+    /// Sets whether or not the client should parse the logs
+    /// or just return the raw logs.
+    pub fn parse_logs(self, parse_logs: bool) -> Self {
+        Self {
+            parse_logs,
+            ..self
+        }
+    }
+
     /// Builds an [UnregisteredClient].
     /// 
     /// The server must be set and the RSA key generated in order for
@@ -231,8 +242,15 @@ impl ClientBuilder {
             secret_key: secret,
             encoded_pub_key,
             reqwest_client,
+            parse_logs: self.parse_logs,
         };
 
         Ok(unreg_client)
+    }
+}
+
+impl Default for ClientBuilder {
+    fn default() -> Self {
+        Self::default()
     }
 }

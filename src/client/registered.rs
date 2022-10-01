@@ -28,6 +28,7 @@ pub struct Client {
     pub(crate) secret_key: String,
     pub(crate) encoded_pub_key: String,
     pub(crate) reqwest_client: reqwest::Client,
+    pub(crate) parse_logs: bool,
 }
 
 impl Client {
@@ -87,7 +88,7 @@ impl Client {
             let data_decoded = base64::decode(data).unwrap();
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
             // let log_entry = serde_json::from_str::<LogEntry>(decrypted_data.as_str()).unwrap();
-            let log_entry = interaction_log::try_parse_log(decrypted_data.as_str());
+            let log_entry = interaction_log::try_parse_log(decrypted_data.as_str(), self.parse_logs);
             results.push(log_entry);
         }
 

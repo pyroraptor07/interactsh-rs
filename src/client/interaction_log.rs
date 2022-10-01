@@ -2,10 +2,10 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 
-pub fn try_parse_log(data_str: &str) -> LogEntry {
+pub fn try_parse_log(data_str: &str, parse_logs: bool) -> LogEntry {
     match serde_json::from_str::<ParsedLogEntry>(data_str) {
-        Ok(parsed_log) => LogEntry::ParsedLog(parsed_log),
-        Err(_) => {
+        Ok(parsed_log) if parse_logs => LogEntry::ParsedLog(parsed_log),
+        _ => {
             let raw_log = RawLog {
                 log_entry: data_str.to_owned(),
             };
