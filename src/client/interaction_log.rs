@@ -2,22 +2,27 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 
-pub fn try_parse_log(data_str: &str, parse_logs: bool) -> LogEntry {
-    match serde_json::from_str::<ParsedLogEntry>(data_str) {
-        Ok(parsed_log) if parse_logs => LogEntry::ParsedLog(parsed_log),
-        _ => {
-            let raw_log = RawLog {
-                log_entry: data_str.to_owned(),
-            };
-            LogEntry::RawLog(raw_log)
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum LogEntry {
     ParsedLog(ParsedLogEntry),
     RawLog(RawLog),
+}
+
+impl LogEntry {
+    pub(crate) fn return_raw_log(raw_log_str: &str) -> LogEntry {
+        let raw_log = RawLog {
+            log_entry: raw_log_str.to_owned(),
+        };
+
+        Self::RawLog(raw_log)
+    }
+
+    pub(crate) fn try_parse_log(raw_log_str: &str) -> LogEntry {
+        match serde_json::from_str::<ParsedLogEntry>(raw_log_str) {
+            Ok(parsed_log) => Self::ParsedLog(parsed_log),
+            Err(_) => Self::return_raw_log(raw_log_str),
+        }
+    }
 }
 
 #[derive(Debug)]
