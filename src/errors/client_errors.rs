@@ -72,7 +72,7 @@ cfg_if::cfg_if! {
 #[error("{error}")]
 pub struct ClientRegistrationError {
     pub error: ClientRegistrationInnerError,
-    pub unregistered_client: crate::client::UnregisteredClient,
+    pub unregistered_client: crate::client::unregistered::UnregisteredClient,
 }
 
 
