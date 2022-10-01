@@ -1,3 +1,4 @@
+#[cfg(feature = "async-compat")]
 use async_compat::Compat;
 use reqwest::StatusCode;
 
@@ -50,9 +51,17 @@ impl UnregisteredClient {
             None => post_request,
         };
 
-        let post_request_future = Compat::new(async {
-            post_request.json(&data).send().await
-        });
+        post_request = post_request.json(&data);
+
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "async-compat")] {
+                let post_request_future = Compat::new(async {
+                    post_request.send().await
+                });
+            } else {
+                let post_request_future = post_request.send();
+            }
+        }
 
         let register_response = post_request_future.await
             .map_err(|e| {

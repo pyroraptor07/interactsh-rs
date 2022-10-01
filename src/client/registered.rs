@@ -1,3 +1,4 @@
+#[cfg(feature = "async-compat")]
 use async_compat::Compat;
 
 use crate::crypto::aes;
@@ -64,9 +65,17 @@ impl Client {
             None => get_request,
         };
 
-        let get_response = Compat::new(async {
-            get_request.send().await
-        }).await?;
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "async-compat")] {
+                let get_request_future = Compat::new(async {
+                    get_request.send().await
+                });
+            } else {
+                let get_request_future = get_request.send();
+            }
+        }
+
+        let get_response = get_request_future.await?;
         let status = &get_response.status();
 
         if !status.is_success() {
