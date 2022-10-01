@@ -25,7 +25,7 @@ pub struct LogEntry {
     pub raw_response: String,
 
     #[serde(rename(deserialize = "remote-address"))]
-    pub remote_address: String,
+    pub remote_address: std::net::IpAddr,
 
     #[serde(with = "timestamp_unixstr_parse")]
     pub timestamp: OffsetDateTime,
