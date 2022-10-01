@@ -4,7 +4,7 @@ use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::ClientError;
 
-use super::{builder::AuthToken, interaction_log::LogEntry};
+use super::{builder::AuthToken, interaction_log::{self, LogEntry}};
 
 
 #[derive(serde::Deserialize)]
@@ -86,7 +86,8 @@ impl Client {
         for data in response_body.data_list.iter() {
             let data_decoded = base64::decode(data).unwrap();
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
-            let log_entry = serde_json::from_str::<LogEntry>(decrypted_data.as_str()).unwrap();
+            // let log_entry = serde_json::from_str::<LogEntry>(decrypted_data.as_str()).unwrap();
+            let log_entry = interaction_log::try_parse_log(decrypted_data.as_str());
             results.push(log_entry);
         }
 
