@@ -104,11 +104,6 @@ pub enum ParsedLogEntry {
         #[serde(with = "timestamp_unixstr_parse")]
         timestamp: OffsetDateTime,
     },
-
-    #[serde(skip)]
-    Other {
-        raw_log_entry: String,
-    },
 }
 
 
