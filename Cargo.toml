@@ -36,6 +36,8 @@ reqwest = { version = "0.11", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1"
 svix-ksuid = "0.6"
+thiserror = "1.0.36"
+time = { version = "0.3.14", features = ["serde", "formatting", "parsing"] }
 uuid = { version = "1", features = ["v4"] }
 
 # RustCrypto dependencies
@@ -51,7 +53,6 @@ openssl = { version = "0.10.41", optional = true }
 
 # Other optional dependencies
 tracing = { version = "0.1", optional = true }
-thiserror = "1.0.36"
 
 [dev-dependencies]
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
