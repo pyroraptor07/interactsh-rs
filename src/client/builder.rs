@@ -3,6 +3,7 @@ use std::time::Duration;
 use rand::seq::SliceRandom;
 use uuid::Uuid;
 use svix_ksuid::*;
+use secrecy::Secret;
 
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::ClientBuildError;
@@ -32,8 +33,20 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
 /// bearer authentication format of `Authorization: Bearer <token>`.
 #[derive(Debug, Clone)]
 pub enum AuthToken {
-    SimpleAuth(String),
-    BearerAuth(String),
+    SimpleAuth(Secret<String>),
+    BearerAuth(Secret<String>),
+}
+
+impl AuthToken {
+    pub fn new_simple(token: String) -> Self {
+        let secret = Secret::new(token);
+        Self::SimpleAuth(secret)
+    }
+
+    pub fn new_bearer(token: String) -> Self {
+        let secret = Secret::new(token);
+        Self::BearerAuth(secret)
+    }
 }
 
 /// Builder for the [Client] struct
@@ -68,7 +81,8 @@ impl ClientBuilder {
     /// provided and maintained by the Interactsh team. This will also set the timeout
     /// to 15 seconds and SSL verification to false.
     pub fn default() -> Self {
-        let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng()).expect("Unable to pick a server from the default list!");
+        let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng())
+            .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
 
         let new_builder = Self {
             rsa_key_size: Some(2048),
@@ -83,32 +97,12 @@ impl ClientBuilder {
         new_builder
     }
 
-    /// Generate a new RSA private key for the [Client] to use of the bit size given.
-    // pub fn gen_rsa_key(self, num_bits: usize) -> Result<Self, ClientBuildError> {
-    //     let rsa_key = RSAPrivKey::generate(num_bits)?;
-
-    //     let new_builder = Self {
-    //         rsa_key: Some(rsa_key),
-    //         ..self
-    //     };
-
-    //     Ok(new_builder)
-    // }
-
     pub fn with_rsa_key_size(self, num_bits: usize) -> Self {
         Self {
             rsa_key_size: Some(num_bits),
             ..self
         }
     }
-
-    /// Set a predefined RSA private key for the [Client] to use.
-    // pub fn with_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
-    //     Self {
-    //         rsa_key: Some(rsa_key),
-    //         ..self
-    //     }
-    // }
 
     /// Set the Interactsh server that the [Client] will connect to.
     pub fn with_server(self, server: String) -> Self {
@@ -239,7 +233,7 @@ impl ClientBuilder {
             sub_domain,
             correlation_id,
             auth_token: self.auth_token,
-            secret_key: secret,
+            secret_key: Secret::new(secret),
             encoded_pub_key,
             reqwest_client,
             parse_logs: self.parse_logs,

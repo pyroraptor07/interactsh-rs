@@ -6,6 +6,8 @@ use std::backtrace::Backtrace;
 
 use thiserror::Error;
 
+use crate::client::client_helpers::Client;
+
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "nightly")] {
@@ -70,9 +72,21 @@ cfg_if::cfg_if! {
 
 #[derive(Error, Debug)]
 #[error("{error}")]
-pub struct ClientRegistrationError {
+pub struct ClientRegistrationError<T> {
     pub error: ClientRegistrationInnerError,
-    pub unregistered_client: crate::client::unregistered::UnregisteredClient,
+    pub client: T,
+}
+
+impl<C> ClientRegistrationError<C>
+where
+    C: Client + Clone,
+{
+    pub(crate) fn new(client: C, inner_error: ClientRegistrationInnerError) -> Self {
+        Self {
+            error: inner_error,
+            client,
+        }
+    }
 }
 
 
@@ -199,7 +213,14 @@ cfg_if::cfg_if! {
                 #[from]
                 source: super::AesDecryptError,
                 backtrace: Backtrace,
-            }
+            },
+
+            #[error("Base64 decoding failed")]
+            Base64DecodeFailed {
+                #[from]
+                source: base64::DecodeError,
+                backtrace: Backtrace,
+            },
         }
     } else {
         /// The error type used by the [Client](crate::client::Client)
@@ -230,7 +251,13 @@ cfg_if::cfg_if! {
             DataDecryptFailed {
                 #[from]
                 source: super::AesDecryptError,
-            }
+            },
+
+            #[error("Base64 decoding failed")]
+            Base64DecodeFailed {
+                #[from]
+                source: base64::DecodeError,
+            },
         }
     }
 }

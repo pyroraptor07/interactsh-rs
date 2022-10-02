@@ -1,50 +1,56 @@
 #[cfg(feature = "async-compat")]
 use async_compat::Compat;
+use secrecy::{Secret, ExposeSecret};
 
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::errors::ClientError;
+use crate::errors::{ClientError, ClientRegistrationError};
 
-use super::{builder::AuthToken, interaction_log::LogEntry};
-
-
-#[derive(serde::Deserialize)]
-struct PollResponse {
-    aes_key: String,
-
-    #[serde(rename(deserialize = "data"))]
-    data_list: Vec<String>,
-}
+use super::{
+    client_helpers::{
+        self,
+        DeregisterData,
+        PollResponse,
+    },
+    builder::AuthToken,
+    interaction_log::LogEntry,
+};
 
 
 /// The primary struct used to communicate with an
 /// Interactsh server.
-#[allow(unused)]
-pub struct Client {
+#[derive(Debug, Clone)]
+pub struct RegisteredClient {
     pub(crate) rsa_key: RSAPrivKey,
     pub(crate) server: String,
     pub(crate) sub_domain: String,
     pub(crate) correlation_id: String,
     pub(crate) auth_token: Option<AuthToken>,
-    pub(crate) secret_key: String,
-    pub(crate) encoded_pub_key: String,
+    pub(crate) secret_key: Secret<String>,
     pub(crate) reqwest_client: reqwest::Client,
     pub(crate) parse_logs: bool,
 }
 
-impl Client {
-    /// Gets the URL that the [Client] registered to the 
+impl RegisteredClient {
+    /// Gets the URL that the [RegisteredClient] registered to the 
     /// Interactsh server with.
-    pub fn get_registered_url(&self) -> String {
+    pub fn get_interaction_url(&self) -> String {
         format!("{}.{}", self.sub_domain, self.server)
     }
 
-    /// Deregisters the [Client] with the Interactsh server.
-    /// 
-    /// If this is successful, then a new [Client] must be created
-    /// to re-register.
-    pub async fn deregister(&mut self) -> Result<(), ClientError> {
-        todo!()
+    /// Deregisters the [RegisteredClient] with the Interactsh server.
+    pub async fn deregister(self) -> Result<(), ClientRegistrationError<RegisteredClient>> {
+        let post_data = DeregisterData {
+            correlation_id: self.correlation_id.clone(),
+            secret_key: self.secret_key.expose_secret().clone(),
+        };
+        client_helpers::register(
+            &self,
+            &post_data,
+            format!("https://{}/deregister", &self.server),
+        ).await?;
+
+        Ok(())
     }
 
     /// Polls the Interactsh server for any new logs.
@@ -52,7 +58,7 @@ impl Client {
         let poll_url = format!("https://{}/poll", self.server);
         let req_query_params = &[
             ("id", &self.correlation_id),
-            ("secret", &self.secret_key),
+            ("secret", &self.secret_key.expose_secret()),
         ];
 
         let mut get_request = self.reqwest_client
@@ -60,8 +66,8 @@ impl Client {
             .query(req_query_params);
         
         get_request = match &self.auth_token {
-            Some(AuthToken::SimpleAuth(token)) => get_request.header("Authorization", token),
-            Some(AuthToken::BearerAuth(token)) => get_request.bearer_auth(token),
+            Some(AuthToken::SimpleAuth(token)) => get_request.header("Authorization", token.expose_secret()),
+            Some(AuthToken::BearerAuth(token)) => get_request.bearer_auth(token.expose_secret()),
             None => get_request,
         };
 
@@ -90,11 +96,11 @@ impl Client {
         }
 
         let response_body = get_response.json::<PollResponse>().await?;
-        let aes_key_decoded = base64::decode(&response_body.aes_key).unwrap();
+        let aes_key_decoded = base64::decode(&response_body.aes_key)?;
         
         let mut results = Vec::new();
         for data in response_body.data_list.iter() {
-            let data_decoded = base64::decode(data).unwrap();
+            let data_decoded = base64::decode(data)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
             
             let log_entry = if self.parse_logs {
@@ -117,5 +123,15 @@ impl Client {
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
 
         Ok(decrypted_string.into())
+    }
+}
+
+impl client_helpers::Client for RegisteredClient {
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.reqwest_client
+    }
+
+    fn get_auth_token(&self) -> Option<&AuthToken> {
+        self.auth_token.as_ref()
     }
 }
