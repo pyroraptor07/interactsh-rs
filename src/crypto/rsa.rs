@@ -37,12 +37,18 @@ impl RSAPubKey {
 }
 
 /// Wrapper struct for the RSA private key
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct RSAPrivKey {
     #[cfg(feature = "rustcrypto")]
     rustcrypto_privkey: RsaPrivateKey,
     #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
     openssl_privkey: PKey<Private>,
+}
+
+impl std::fmt::Debug for RSAPrivKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<RSA Private Key>")
+    }
 }
 
 impl RSAPrivKey {
