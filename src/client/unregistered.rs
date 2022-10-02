@@ -12,6 +12,13 @@ use super::{
     registered::RegisteredClient,
 };
 
+
+/// The client type returned by the [ClientBuilder](crate::client::builder::ClientBuilder) 
+/// build function.
+/// 
+/// The register function must be called on this client in order to turn it
+/// into a [RegisteredClient](crate::client::registered::RegisteredClient), which can
+/// be used to poll an Interactsh server.
 #[derive(Debug, Clone)]
 pub struct UnregisteredClient {
     pub(crate) rsa_key: RSAPrivKey,
@@ -26,6 +33,12 @@ pub struct UnregisteredClient {
 }
 
 impl UnregisteredClient {
+    /// Registers this client with the Interactsh server it was configured for.
+    /// 
+    /// On a successful result, this returns a [RegisteredClient](crate::client::registered::RegisteredClient)
+    /// that can be used to poll the server. If the registration fails, this returns
+    /// a [ClientRegistrationError](crate::errors::client_errors::ClientRegistrationError), which
+    /// contains a clone of this client if another try is needed.
     pub async fn register(self) -> Result<RegisteredClient, ClientRegistrationError<UnregisteredClient>> {
         let post_data = RegisterData {
             public_key: self.encoded_pub_key.clone(),
@@ -36,6 +49,8 @@ impl UnregisteredClient {
             &self, 
             &post_data,
             format!("https://{}/register", &self.server),
+            &self.reqwest_client,
+            self.auth_token.as_ref(),
         ).await?;
 
         let new_reg_client = RegisteredClient {
@@ -53,12 +68,4 @@ impl UnregisteredClient {
     }
 }
 
-impl client_helpers::Client for UnregisteredClient {
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.reqwest_client
-    }
-
-    fn get_auth_token(&self) -> Option<&AuthToken> {
-        self.auth_token.as_ref()
-    }
-}
+impl client_helpers::Client for UnregisteredClient {}

@@ -11,8 +11,22 @@ use crate::errors::{
 use super::builder::AuthToken;
 
 
+// Marker traits
+
+/// Marker trait for the types used to 
+/// serialize post request body data
+pub(crate) trait PostData {}
+
+/// Marker trait for the 
+/// [UnregisteredClient](crate::client::unregistered::UnregisteredClient) and
+/// [RegisteredClient](crate::client::registered::RegisteredClient) types
+pub trait Client {}
 
 
+// Serde objects
+
+/// Serde struct used to deserialize the 
+/// json body of a poll response
 #[derive(serde::Deserialize)]
 pub(crate) struct PollResponse {
     pub(crate) aes_key: String,
@@ -22,11 +36,10 @@ pub(crate) struct PollResponse {
 }
 
 
-pub trait PostData {}
-
-
+/// Serde struct used to serialize the body data
+/// for a deregister post request
 #[derive(serde::Serialize)]
-pub struct DeregisterData {
+pub(crate) struct DeregisterData {
     #[serde(rename(serialize = "correlation-id"))]
     pub(crate) correlation_id: String,
 
@@ -37,8 +50,10 @@ pub struct DeregisterData {
 impl PostData for DeregisterData {}
 
 
+/// Serde struct used to serialize the body data
+/// for a register post request
 #[derive(serde::Serialize)]
-pub struct RegisterData {
+pub(crate) struct RegisterData {
     #[serde(rename(serialize = "public-key"))]
     pub(crate) public_key: String,
 
@@ -52,20 +67,17 @@ pub struct RegisterData {
 impl PostData for RegisterData {}
 
 
-pub trait Client {
-    fn get_reqwest_client(&self) -> &reqwest::Client;
-    fn get_auth_token(&self) -> Option<&AuthToken>;
-}
-
-
-pub async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
+/// Sends a post request to register or deregister a [Client]
+pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
     client: &T,
     post_data: &D,
     register_url: String,
+    reqwest_client: &reqwest::Client,
+    auth_token: Option<&AuthToken>,
 ) -> Result<(), ClientRegistrationError<T>> {
-    let mut post_request = client.get_reqwest_client().post(register_url);
+    let mut post_request = reqwest_client.post(register_url);
 
-    post_request = match client.get_auth_token() {
+    post_request = match auth_token {
         Some(AuthToken::SimpleAuth(token)) => post_request.header("Authorization", token.expose_secret()),
         Some(AuthToken::BearerAuth(token)) => post_request.bearer_auth(token.expose_secret()),
         None => post_request,

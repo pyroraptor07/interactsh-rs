@@ -49,7 +49,7 @@ impl AuthToken {
     }
 }
 
-/// Builder for the [Client] struct
+/// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
 pub struct ClientBuilder {
     rsa_key_size: Option<usize>,
     server: Option<String>,
@@ -79,7 +79,7 @@ impl ClientBuilder {
     /// This will create a builder with a 2048 bit RSA key and server randomly picked from the
     /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server) 
     /// provided and maintained by the Interactsh team. This will also set the timeout
-    /// to 15 seconds and SSL verification to false.
+    /// to 15 seconds, SSL verification to false, and parse_logs to true.
     pub fn default() -> Self {
         let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng())
             .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
@@ -172,13 +172,13 @@ impl ClientBuilder {
         }
     }
 
-    /// Builds an [UnregisteredClient].
+    /// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient).
     /// 
     /// The server must be set and the RSA key generated in order for
     /// this to succeed. If the build succeeds, the
-    /// [register()](UnregisteredClient::register) function must be
-    /// called on the returned [UnregisteredClient] to turn it into
-    /// a usable [Client].
+    /// register function must be called on the returned
+    ///  [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
+    /// to turn it into a [RegisteredClient](crate::client::registered::RegisteredClient).
     pub fn build(self) -> Result<UnregisteredClient, ClientBuildError> {
         // Ensure rsa_key and server are set
         let rsa_key_size = self.rsa_key_size.ok_or(ClientBuildError::MissingRsaKeySize)?;

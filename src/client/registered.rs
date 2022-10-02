@@ -17,8 +17,8 @@ use super::{
 };
 
 
-/// The primary struct used to communicate with an
-/// Interactsh server.
+/// The client type returned when an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
+/// successfully registers with its configured Interactsh server.
 #[derive(Debug, Clone)]
 pub struct RegisteredClient {
     pub(crate) rsa_key: RSAPrivKey,
@@ -32,13 +32,17 @@ pub struct RegisteredClient {
 }
 
 impl RegisteredClient {
-    /// Gets the URL that the [RegisteredClient] registered to the 
-    /// Interactsh server with.
+    /// Gets the interaction URL for the current
+    /// registered session
     pub fn get_interaction_url(&self) -> String {
         format!("{}.{}", self.sub_domain, self.server)
     }
 
     /// Deregisters the [RegisteredClient] with the Interactsh server.
+    /// 
+    /// If the deregistration fails, this returns a 
+    /// [ClientRegistrationError](crate::errors::client_errors::ClientRegistrationError),
+    /// which contains a clone of this client if another try is needed.
     pub async fn deregister(self) -> Result<(), ClientRegistrationError<RegisteredClient>> {
         let post_data = DeregisterData {
             correlation_id: self.correlation_id.clone(),
@@ -48,12 +52,17 @@ impl RegisteredClient {
             &self,
             &post_data,
             format!("https://{}/deregister", &self.server),
+            &self.reqwest_client,
+            self.auth_token.as_ref(),
         ).await?;
 
         Ok(())
     }
 
     /// Polls the Interactsh server for any new logs.
+    /// 
+    /// This returns a vec of [LogEntry](crate::client::interaction_log::LogEntry).
+    /// If there are no new logs, an empty vec is returned.
     pub async fn poll(&self) -> Result<Vec<LogEntry>, ClientError> {
         let poll_url = format!("https://{}/poll", self.server);
         let req_query_params = &[
@@ -117,21 +126,11 @@ impl RegisteredClient {
 
     fn decrypt_data(&self, aes_key: &Vec<u8>, encrypted_data: &Vec<u8>) -> Result<String, ClientError> {
         let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
-
         let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
-
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
 
         Ok(decrypted_string.into())
     }
 }
 
-impl client_helpers::Client for RegisteredClient {
-    fn get_reqwest_client(&self) -> &reqwest::Client {
-        &self.reqwest_client
-    }
-
-    fn get_auth_token(&self) -> Option<&AuthToken> {
-        self.auth_token.as_ref()
-    }
-}
+impl client_helpers::Client for RegisteredClient {}

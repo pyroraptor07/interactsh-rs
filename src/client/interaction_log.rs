@@ -2,6 +2,15 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 
+/// Type returned when a [RegisteredClient](crate::client::registered::RegisteredClient)
+/// polls a server and obtains new interaction logs
+/// 
+/// Whether or not a raw log or a parsed log is
+/// returned depends on the following:
+/// 1. If the client was built with the "parse logs" option set to true
+/// (see [ClientBuilder](crate::client::builder::ClientBuilder))
+/// 2. If the logs are able to be parsed (if the logs are unable to be parsed, then the raw
+/// logs are returned)
 #[derive(Debug)]
 pub enum LogEntry {
     ParsedLog(ParsedLogEntry),
@@ -25,6 +34,8 @@ impl LogEntry {
     }
 }
 
+/// Wrapper type containing the raw log string received by the client from the
+/// Interactsh server (after decoding and decrypting)
 #[derive(Debug)]
 pub struct RawLog {
     pub log_entry: String,
@@ -42,6 +53,7 @@ pub enum DnsQType {
     AAAA,
 }
 
+/// A fully parsed log entry returned by an Interactsh server
 #[derive(Debug, Deserialize)]
 #[serde(tag = "protocol")]
 pub enum ParsedLogEntry {
