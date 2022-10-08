@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::Deserialize;
 use time::OffsetDateTime;
 
@@ -53,6 +55,21 @@ pub enum DnsQType {
     AAAA,
 }
 
+impl Display for DnsQType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DnsQType::A => write!(f, "A"),
+            DnsQType::NS => write!(f, "NS"),
+            DnsQType::CNAME => write!(f, "CNAME"),
+            DnsQType::SOA => write!(f, "SOA"),
+            DnsQType::PTR => write!(f, "PTR"),
+            DnsQType::MX => write!(f, "MX"),
+            DnsQType::TXT => write!(f, "TXT"),
+            DnsQType::AAAA => write!(f, "AAAA"),
+        }
+    }
+}
+
 /// A fully parsed log entry returned by an Interactsh server
 #[derive(Debug, Deserialize)]
 #[serde(tag = "protocol")]
@@ -61,7 +78,7 @@ pub enum ParsedLogEntry {
     Dns {
         unique_id: String,
         full_id: String,
-        q_type: DnsQType,
+        q_type: Option<DnsQType>,
         raw_request: String,
         raw_response: String,
         remote_address: std::net::IpAddr,
@@ -118,22 +135,116 @@ pub enum ParsedLogEntry {
     },
 }
 
+impl Display for ParsedLogEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let log_string = match self {
+            ParsedLogEntry::Dns {
+                unique_id,
+                full_id,
+                q_type,
+                raw_request,
+                raw_response,
+                remote_address,
+                timestamp,
+            } => {
+                format!(
+                    "[DNS]\nUnique ID: {}\nFull ID: {}\nQ Type: {}\nRaw Request:\n{}\nRaw Response:\n{}\nRemote Address: {}\nTimestamp: {}",
+                    unique_id,
+                    full_id,
+                    if let Some(inner) = q_type {inner.to_string()} else {"None".to_owned()},
+                    raw_request,
+                    raw_response,
+                    remote_address.to_string(),
+                    timestamp.to_string(),
+                )
+            }
+            ParsedLogEntry::Ftp {
+                remote_address,
+                raw_request,
+                timestamp,
+            } => {
+                format!(
+                    "[FTP]\nRemote Address: {}\nRaw Request:\n{}\nTimestamp: {}",
+                    remote_address.to_string(),
+                    raw_request,
+                    timestamp.to_string(),
+                )
+            }
+            ParsedLogEntry::Http {
+                unique_id,
+                full_id,
+                raw_request,
+                raw_response,
+                remote_address,
+                timestamp,
+            } => {
+                format!(
+                    "[HTTP]\nUnique ID: {}\nFull ID: {}\nRaw Request:\n{}\nRaw Response:\n{}\nRemote Address: {}\nTimestamp: {}",
+                    unique_id,
+                    full_id,
+                    raw_request,
+                    raw_response,
+                    remote_address.to_string(),
+                    timestamp.to_string(),
+                )
+            }
+            ParsedLogEntry::Ldap {
+                unique_id,
+                full_id,
+                raw_request,
+                raw_response,
+                remote_address,
+                timestamp,
+            } => {
+                format!(
+                    "[LDAP]\nUnique ID: {}\nFull ID: {}\nRaw Request:\n{}\nRaw Response:\n{}\nRemote Address: {}\nTimestamp: {}",
+                    unique_id,
+                    full_id,
+                    raw_request,
+                    raw_response,
+                    remote_address.to_string(),
+                    timestamp.to_string(),
+                )
+            }
+            ParsedLogEntry::Smb {
+                raw_request,
+                timestamp,
+            } => {
+                format!(
+                    "[SMB]\nRaw Request:\n{}\nTimestamp: {}",
+                    raw_request,
+                    timestamp.to_string(),
+                )
+            }
+            ParsedLogEntry::Smtp {
+                unique_id,
+                full_id,
+                raw_request,
+                smtp_from,
+                remote_address,
+                timestamp,
+            } => {
+                format!(
+                    "[SMTP]\nUnique ID: {}\nFull ID: {}\nRaw Request:\n{}\nSMTP From: {}\nRemote Address: {}\nTimestamp: {}",
+                    unique_id,
+                    full_id,
+                    raw_request,
+                    smtp_from,
+                    remote_address.to_string(),
+                    timestamp.to_string(),
+                )
+            }
+        };
+
+        write!(f, "{}", log_string)
+    }
+}
+
 
 mod timestamp_unixstr_parse {
-
     use serde::{de, Deserialize, Deserializer};
     use time::format_description::well_known::Iso8601;
     use time::OffsetDateTime;
-
-    // #[allow(unused)]
-    // pub fn serialize<S: Serializer>(
-    //     datetime: &OffsetDateTime,
-    //     serializer: S,
-    // ) -> Result<S::Ok, S::Error> {
-    //     let serialized_string = datetime.format(&Iso8601::DEFAULT)
-    //         .map_err(|e| ser::Error::custom(format!("{}", e)))?;
-    //     serializer.serialize_str(&serialized_string)
-    // }
 
     pub fn deserialize<'a, D: Deserializer<'a>>(
         deserializer: D,
