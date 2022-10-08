@@ -1,15 +1,14 @@
 use std::time::Duration;
 
 use rand::seq::SliceRandom;
-use uuid::Uuid;
-use svix_ksuid::*;
 use secrecy::Secret;
+use svix_ksuid::*;
+use uuid::Uuid;
 
+use super::proxy::ClientProxy;
+use super::unregistered::UnregisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::ClientBuildError;
-
-use super::{proxy::ClientProxy, unregistered::UnregisteredClient};
-
 
 /// The default list of servers provided by the Interactsh team
 const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
@@ -21,39 +20,11 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     // "oast.me",
 ];
 
-
-/// Represents an auth token to use when authenticating with an
-/// Interactsh server.
-/// 
-/// Use SimpleAuth if the server does not follow the 
-/// [HTTP bearer authentication format](https://swagger.io/docs/specification/authentication/bearer-authentication/)
-/// and instead uses the format `Authorization: <token>`.
-/// 
-/// Use BearerAuth if the server does follow the HTTP
-/// bearer authentication format of `Authorization: Bearer <token>`.
-#[derive(Debug, Clone)]
-pub enum AuthToken {
-    SimpleAuth(Secret<String>),
-    BearerAuth(Secret<String>),
-}
-
-impl AuthToken {
-    pub fn new_simple(token: String) -> Self {
-        let secret = Secret::new(token);
-        Self::SimpleAuth(secret)
-    }
-
-    pub fn new_bearer(token: String) -> Self {
-        let secret = Secret::new(token);
-        Self::BearerAuth(secret)
-    }
-}
-
 /// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
 pub struct ClientBuilder {
     rsa_key_size: Option<usize>,
     server: Option<String>,
-    auth_token: Option<AuthToken>,
+    auth_token: Option<Secret<String>>,
     proxies: Option<Vec<ClientProxy>>,
     timeout: Option<Duration>,
     ssl_verify: bool,
@@ -75,13 +46,14 @@ impl ClientBuilder {
     }
 
     /// Create a new builder with the default options.
-    /// 
+    ///
     /// This will create a builder with a 2048 bit RSA key and server randomly picked from the
-    /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server) 
+    /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server)
     /// provided and maintained by the Interactsh team. This will also set the timeout
     /// to 15 seconds, SSL verification to false, and parse_logs to true.
     pub fn default() -> Self {
-        let server = *DEFAULT_INTERACTSH_SERVERS.choose(&mut rand::thread_rng())
+        let server = *DEFAULT_INTERACTSH_SERVERS
+            .choose(&mut rand::thread_rng())
             .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
 
         let new_builder = Self {
@@ -104,7 +76,7 @@ impl ClientBuilder {
         }
     }
 
-    /// Set the Interactsh server that the [Client] will connect to.
+    /// Set the Interactsh server that the client will connect to.
     pub fn with_server(self, server: String) -> Self {
         Self {
             server: Some(server),
@@ -112,23 +84,23 @@ impl ClientBuilder {
         }
     }
 
-    /// Set an optional auth token that the [Client] will use to authenticate 
+    /// Set an optional auth token that the client will use to authenticate
     /// with the Interactsh server.
-    /// 
-    /// If this is not set, then no auth header will be sent to the 
+    ///
+    /// If this is not set, then no auth header will be sent to the
     /// server.
-    pub fn with_auth_token(self, auth_token: AuthToken) -> Self {
+    pub fn with_auth_token(self, auth_token: String) -> Self {
+        let token = Secret::new(auth_token);
         Self {
-            auth_token: Some(auth_token),
+            auth_token: Some(token),
             ..self
         }
     }
 
-
-    /// Set an optional proxy URL that the [Client] can use.
-    /// 
+    /// Set an optional proxy URL that the client can use.
+    ///
     /// This can be set more than once; each new proxy URL will be added
-    /// to a list of proxies that the [Client] will try.
+    /// to a list of proxies that the client will try.
     pub fn with_proxy(self, proxy: ClientProxy) -> Self {
         let proxies = match self.proxies {
             Some(mut proxies) => {
@@ -138,12 +110,8 @@ impl ClientBuilder {
             None => Some(vec![proxy]),
         };
 
-        Self {
-            proxies,
-            ..self
-        }
+        Self { proxies, ..self }
     }
-
 
     /// Set the timeout value for server requests.
     pub fn with_timeout(self, timeout: Duration) -> Self {
@@ -153,27 +121,20 @@ impl ClientBuilder {
         }
     }
 
-
-    /// Sets whether or not the client should verify the 
+    /// Sets whether or not the client should verify the
     /// server's SSL certificate.
     pub fn verify_ssl(self, ssl_verify: bool) -> Self {
-        Self {
-            ssl_verify,
-            ..self
-        }
+        Self { ssl_verify, ..self }
     }
 
     /// Sets whether or not the client should parse the logs
     /// or just return the raw logs.
     pub fn parse_logs(self, parse_logs: bool) -> Self {
-        Self {
-            parse_logs,
-            ..self
-        }
+        Self { parse_logs, ..self }
     }
 
     /// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient).
-    /// 
+    ///
     /// The server must be set and the RSA key generated in order for
     /// this to succeed. If the build succeeds, the
     /// register function must be called on the returned
@@ -181,7 +142,9 @@ impl ClientBuilder {
     /// to turn it into a [RegisteredClient](crate::client::registered::RegisteredClient).
     pub fn build(self) -> Result<UnregisteredClient, ClientBuildError> {
         // Ensure rsa_key and server are set
-        let rsa_key_size = self.rsa_key_size.ok_or(ClientBuildError::MissingRsaKeySize)?;
+        let rsa_key_size = self
+            .rsa_key_size
+            .ok_or(ClientBuildError::MissingRsaKeySize)?;
         let server = self.server.ok_or(ClientBuildError::MissingServer)?;
 
         // Get the other values needed
@@ -222,7 +185,8 @@ impl ClientBuilder {
             }
         }
 
-        reqwest_client_builder = reqwest_client_builder.danger_accept_invalid_certs(self.ssl_verify);
+        reqwest_client_builder =
+            reqwest_client_builder.danger_accept_invalid_certs(!self.ssl_verify);
 
         let reqwest_client = reqwest_client_builder.build()?;
 

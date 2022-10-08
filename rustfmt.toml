@@ -1,0 +1,9 @@
+blank_lines_upper_bound = 3
+force_multiline_blocks = true
+imports_layout = "HorizontalVertical"
+imports_granularity = "Module"
+newline_style = "Unix"
+reorder_impl_items = true
+group_imports = "StdExternalCrate"
+tab_spaces = 4
+use_field_init_shorthand = true

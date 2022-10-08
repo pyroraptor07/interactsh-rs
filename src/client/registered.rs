@@ -1,21 +1,12 @@
 #[cfg(feature = "async-compat")]
 use async_compat::Compat;
-use secrecy::{Secret, ExposeSecret};
+use secrecy::{ExposeSecret, Secret};
 
+use super::client_helpers::{self, DeregisterData, PollResponse};
+use super::interaction_log::LogEntry;
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::{ClientError, ClientRegistrationError};
-
-use super::{
-    client_helpers::{
-        self,
-        DeregisterData,
-        PollResponse,
-    },
-    builder::AuthToken,
-    interaction_log::LogEntry,
-};
-
 
 /// The client type returned when an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
 /// successfully registers with its configured Interactsh server.
@@ -25,7 +16,7 @@ pub struct RegisteredClient {
     pub(crate) server: String,
     pub(crate) sub_domain: String,
     pub(crate) correlation_id: String,
-    pub(crate) auth_token: Option<AuthToken>,
+    pub(crate) auth_token: Option<Secret<String>>,
     pub(crate) secret_key: Secret<String>,
     pub(crate) reqwest_client: reqwest::Client,
     pub(crate) parse_logs: bool,
@@ -39,8 +30,8 @@ impl RegisteredClient {
     }
 
     /// Deregisters the [RegisteredClient] with the Interactsh server.
-    /// 
-    /// If the deregistration fails, this returns a 
+    ///
+    /// If the deregistration fails, this returns a
     /// [ClientRegistrationError](crate::errors::client_errors::ClientRegistrationError),
     /// which contains a clone of this client if another try is needed.
     pub async fn deregister(self) -> Result<(), ClientRegistrationError<RegisteredClient>> {
@@ -54,13 +45,14 @@ impl RegisteredClient {
             format!("https://{}/deregister", &self.server),
             &self.reqwest_client,
             self.auth_token.as_ref(),
-        ).await?;
+        )
+        .await?;
 
         Ok(())
     }
 
     /// Polls the Interactsh server for any new logs.
-    /// 
+    ///
     /// This returns a vec of [LogEntry](crate::client::interaction_log::LogEntry).
     /// If there are no new logs, an empty vec is returned.
     pub async fn poll(&self) -> Result<Vec<LogEntry>, ClientError> {
@@ -70,13 +62,10 @@ impl RegisteredClient {
             ("secret", &self.secret_key.expose_secret()),
         ];
 
-        let mut get_request = self.reqwest_client
-            .get(poll_url)
-            .query(req_query_params);
-        
+        let mut get_request = self.reqwest_client.get(poll_url).query(req_query_params);
+
         get_request = match &self.auth_token {
-            Some(AuthToken::SimpleAuth(token)) => get_request.header("Authorization", token.expose_secret()),
-            Some(AuthToken::BearerAuth(token)) => get_request.bearer_auth(token.expose_secret()),
+            Some(token) => get_request.header("Authorization", token.expose_secret()),
             None => get_request,
         };
 
@@ -94,7 +83,10 @@ impl RegisteredClient {
         let status = &get_response.status();
 
         if !status.is_success() {
-            let server_msg = get_response.text().await.unwrap_or("Unknown error".to_string());
+            let server_msg = get_response
+                .text()
+                .await
+                .unwrap_or("Unknown error".to_string());
             let status_code = status.as_u16();
             let error = ClientError::PollError {
                 server_msg,
@@ -105,26 +97,34 @@ impl RegisteredClient {
         }
 
         let response_body = get_response.json::<PollResponse>().await?;
+        let response_body_data = match response_body.data_list {
+            Some(data) => data,
+            None => return Ok(vec![]),
+        };
         let aes_key_decoded = base64::decode(&response_body.aes_key)?;
-        
+
         let mut results = Vec::new();
-        for data in response_body.data_list.iter() {
+        for data in response_body_data.iter() {
             let data_decoded = base64::decode(data)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
-            
+
             let log_entry = if self.parse_logs {
                 LogEntry::try_parse_log(decrypted_data.as_str())
             } else {
                 LogEntry::return_raw_log(decrypted_data.as_str())
             };
-            
+
             results.push(log_entry);
         }
 
         Ok(results)
     }
 
-    fn decrypt_data(&self, aes_key: &Vec<u8>, encrypted_data: &Vec<u8>) -> Result<String, ClientError> {
+    fn decrypt_data(
+        &self,
+        aes_key: &Vec<u8>,
+        encrypted_data: &Vec<u8>,
+    ) -> Result<String, ClientError> {
         let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
         let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);

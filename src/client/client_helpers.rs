@@ -1,40 +1,32 @@
 #[cfg(feature = "async-compat")]
 use async_compat::Compat;
 use reqwest::StatusCode;
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, Secret};
 
-use crate::errors::{
-    ClientRegistrationError,
-    ClientRegistrationInnerError,
-};
-
-use super::builder::AuthToken;
-
+use crate::errors::{ClientRegistrationError, ClientRegistrationInnerError};
 
 // Marker traits
 
-/// Marker trait for the types used to 
+/// Marker trait for the types used to
 /// serialize post request body data
 pub(crate) trait PostData {}
 
-/// Marker trait for the 
+/// Marker trait for the
 /// [UnregisteredClient](crate::client::unregistered::UnregisteredClient) and
 /// [RegisteredClient](crate::client::registered::RegisteredClient) types
 pub trait Client {}
 
-
 // Serde objects
 
-/// Serde struct used to deserialize the 
+/// Serde struct used to deserialize the
 /// json body of a poll response
 #[derive(serde::Deserialize)]
 pub(crate) struct PollResponse {
     pub(crate) aes_key: String,
 
     #[serde(rename(deserialize = "data"))]
-    pub(crate) data_list: Vec<String>,
+    pub(crate) data_list: Option<Vec<String>>,
 }
-
 
 /// Serde struct used to serialize the body data
 /// for a deregister post request
@@ -48,7 +40,6 @@ pub(crate) struct DeregisterData {
 }
 
 impl PostData for DeregisterData {}
-
 
 /// Serde struct used to serialize the body data
 /// for a register post request
@@ -66,20 +57,18 @@ pub(crate) struct RegisterData {
 
 impl PostData for RegisterData {}
 
-
 /// Sends a post request to register or deregister a [Client]
 pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
     client: &T,
     post_data: &D,
     register_url: String,
     reqwest_client: &reqwest::Client,
-    auth_token: Option<&AuthToken>,
+    auth_token: Option<&Secret<String>>,
 ) -> Result<(), ClientRegistrationError<T>> {
     let mut post_request = reqwest_client.post(register_url);
 
     post_request = match auth_token {
-        Some(AuthToken::SimpleAuth(token)) => post_request.header("Authorization", token.expose_secret()),
-        Some(AuthToken::BearerAuth(token)) => post_request.bearer_auth(token.expose_secret()),
+        Some(token) => post_request.header("Authorization", token.expose_secret()),
         None => post_request,
     };
 
@@ -95,39 +84,32 @@ pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
         }
     }
 
-    let register_response = post_request_future.await
-        .map_err(|e| {
-            let inner_error = ClientRegistrationInnerError::from(e);
-            ClientRegistrationError::new(
-                client.clone(),
-                inner_error,
-            )
-        })?;
+    let register_response = post_request_future.await.map_err(|e| {
+        let inner_error = ClientRegistrationInnerError::from(e);
+        ClientRegistrationError::new(client.clone(), inner_error)
+    })?;
 
     match register_response.status() {
         StatusCode::OK => Ok(()),
         StatusCode::UNAUTHORIZED => {
             let inner_error = ClientRegistrationInnerError::Unauthorized;
-            let error = ClientRegistrationError::new(
-                client.clone(),
-                inner_error,
-            );
+            let error = ClientRegistrationError::new(client.clone(), inner_error);
 
             Err(error)
         }
         status => {
-            let server_msg = register_response.text().await.unwrap_or("Unknown error".to_string());
+            let server_msg = register_response
+                .text()
+                .await
+                .unwrap_or("Unknown error".to_string());
             let status_code = status.as_u16();
 
-            let inner_error = ClientRegistrationInnerError::RegistrationFailure { 
+            let inner_error = ClientRegistrationInnerError::RegistrationFailure {
                 server_msg,
                 status_code,
             };
 
-            let error = ClientRegistrationError::new(
-                client.clone(),
-                inner_error,
-            );
+            let error = ClientRegistrationError::new(client.clone(), inner_error);
 
             Err(error)
         }

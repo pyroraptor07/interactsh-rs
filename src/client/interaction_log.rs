@@ -4,7 +4,7 @@ use time::OffsetDateTime;
 
 /// Type returned when a [RegisteredClient](crate::client::registered::RegisteredClient)
 /// polls a server and obtains new interaction logs
-/// 
+///
 /// Whether or not a raw log or a parsed log is
 /// returned depends on the following:
 /// 1. If the client was built with the "parse logs" option set to true
@@ -105,7 +105,7 @@ pub enum ParsedLogEntry {
         #[serde(with = "timestamp_unixstr_parse")]
         timestamp: OffsetDateTime,
     },
-    
+
     #[serde(alias = "smtp", rename_all(deserialize = "kebab-case"))]
     Smtp {
         unique_id: String,
@@ -122,8 +122,8 @@ pub enum ParsedLogEntry {
 mod timestamp_unixstr_parse {
 
     use serde::{de, Deserialize, Deserializer};
-    use time::OffsetDateTime;
     use time::format_description::well_known::Iso8601;
+    use time::OffsetDateTime;
 
     // #[allow(unused)]
     // pub fn serialize<S: Serializer>(
@@ -135,10 +135,10 @@ mod timestamp_unixstr_parse {
     //     serializer.serialize_str(&serialized_string)
     // }
 
-    pub fn deserialize<'a, D: Deserializer<'a>>(deserializer: D) -> Result<OffsetDateTime, D::Error> {
-        OffsetDateTime::parse(
-            <_>::deserialize(deserializer)?, 
-            &Iso8601::DEFAULT,
-        ).map_err(|e| de::Error::custom(format!("{}", e)))
+    pub fn deserialize<'a, D: Deserializer<'a>>(
+        deserializer: D,
+    ) -> Result<OffsetDateTime, D::Error> {
+        OffsetDateTime::parse(<_>::deserialize(deserializer)?, &Iso8601::DEFAULT)
+            .map_err(|e| de::Error::custom(format!("{}", e)))
     }
 }

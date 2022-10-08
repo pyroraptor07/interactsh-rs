@@ -1,12 +1,12 @@
 //! # Interactsh-rs
 //! A Rust client library for getting interaction logs from Interact.sh servers.
-//! 
+//!
 //! ### Basic Use
 //! ```
 //! use std::time::Duration;
 //! use std::thread;
 //! use interactsh_rs::prelude::*;
-//! 
+//!
 //! async fn run_client() {
 //!     // Builds an unregistered client
 //!     let client = ClientBuilder::default()
@@ -14,30 +14,29 @@
 //!         .parse_logs(true)
 //!         .build()
 //!         .unwrap();
-//! 
+//!
 //!     // Registers the client with the server and
 //!     // returns a registered client
 //!     let client = client.register().await.unwrap();
 //!     let interaction_url = client.get_interaction_url();
 //!     println!("INTERACTION URL: {}", interaction_url);
-//! 
+//!
 //!     // Start a poll loop
 //!     loop {
 //!         thread::sleep(Duration::from_secs(5));
-//! 
+//!
 //!         let logs = client.poll().await.unwrap();
 //!         if logs.is_empty() {
 //!             continue;
 //!         }
-//! 
+//!
 //!         // ...Do something with the returned logs...
 //!     }
-//! 
+//!
 //!     // Once done, deregister the client
 //!     let _ = client.deregister().await.unwrap();
 //! }
 //! ```
-
 
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
 #![cfg_attr(feature = "nightly", feature(error_generic_member_access))]
@@ -58,16 +57,8 @@ pub mod client;
 pub mod errors;
 
 pub mod prelude {
-    pub use crate::client::builder::{
-        AuthToken,
-        ClientBuilder,
-    };
-    pub use crate::client::unregistered::UnregisteredClient;
+    pub use crate::client::builder::ClientBuilder;
+    pub use crate::client::interaction_log::{DnsQType, LogEntry, ParsedLogEntry, RawLog};
     pub use crate::client::registered::RegisteredClient;
-    pub use crate::client::interaction_log::{
-        LogEntry,
-        RawLog,
-        ParsedLogEntry,
-        DnsQType,
-    };
+    pub use crate::client::unregistered::UnregisteredClient;
 }

@@ -43,7 +43,11 @@ pub struct ClientProxy {
 
 impl ClientProxy {
     pub fn new(server: String, proxy_type: ProxyType, port: Option<u16>) -> Self {
-        Self { server, proxy_type, port }
+        Self {
+            server,
+            proxy_type,
+            port,
+        }
     }
 
     pub(crate) fn into_reqwest_proxy(self) -> Result<reqwest::Proxy, ProxyConvertError> {
