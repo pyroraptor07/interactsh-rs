@@ -52,10 +52,7 @@ impl RegisteredClient {
     }
 
     /// Polls the Interactsh server for any new logs.
-    ///
-    /// This returns a vec of [LogEntry](crate::client::interaction_log::LogEntry).
-    /// If there are no new logs, an empty vec is returned.
-    pub async fn poll(&self) -> Result<Vec<LogEntry>, ClientError> {
+    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, ClientError> {
         let poll_url = format!("https://{}/poll", self.server);
         let req_query_params = &[
             ("id", &self.correlation_id),
@@ -98,8 +95,14 @@ impl RegisteredClient {
 
         let response_body = get_response.json::<PollResponse>().await?;
         let response_body_data = match response_body.data_list {
-            Some(data) => data,
-            None => return Ok(vec![]),
+            Some(data) => {
+                if data.is_empty() {
+                    return Ok(None);
+                } else {
+                    data
+                }
+            }
+            None => return Ok(None),
         };
         let aes_key_decoded = base64::decode(&response_body.aes_key)?;
 
@@ -117,7 +120,7 @@ impl RegisteredClient {
             results.push(log_entry);
         }
 
-        Ok(results)
+        Ok(Some(results))
     }
 
     fn decrypt_data(&self, aes_key: &[u8], encrypted_data: &[u8]) -> Result<String, ClientError> {

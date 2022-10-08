@@ -27,10 +27,10 @@ async fn run_client() {
     loop {
         thread::sleep(Duration::from_secs(5));
 
-        let logs = client.poll().await.unwrap();
-        if logs.is_empty() {
-            continue;
-        }
+        let logs = match client.poll().await.unwrap() {
+            Some(logs) => logs,
+            None => continue,
+        };
 
         // ...Do something with the returned logs...
     }
