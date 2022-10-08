@@ -24,7 +24,7 @@ reqwest-rustls-tls = ["reqwest/rustls-tls"]
 
 # Other features
 async-compat = ["dep:async-compat"]
-trace = ["dep:tracing"]
+# trace = ["dep:tracing"]
 nightly = []
 
 
