@@ -1,4 +1,4 @@
-//! The error types used by the [Client](crate::client::Client) and 
+//! The error types used by the [Client](crate::client::Client) and
 //! [ClientBuilder](crate::client::ClientBuilder) structs
 
 #[cfg(feature = "nightly")]
@@ -38,10 +38,10 @@ cfg_if::cfg_if! {
                 source: reqwest::Error,
                 backtrace: Backtrace,
             },
-        
+
             #[error("Server returned an Unauthorized status code")]
             Unauthorized,
-        
+
             #[error("Failed to register with the server - {status_code}: {server_msg}")]
             RegistrationFailure {
                 server_msg: String,
@@ -56,10 +56,10 @@ cfg_if::cfg_if! {
                 #[from]
                 source: reqwest::Error,
             },
-        
+
             #[error("Server returned an Unauthorized status code")]
             Unauthorized,
-        
+
             #[error("Failed to register with the server - {status_code}: {server_msg}")]
             RegistrationFailure {
                 server_msg: String,

@@ -17,7 +17,7 @@ cfg_if::cfg_if! {
                 source: inout::NotEqualError,
                 backtrace: Backtrace,
             },
-        
+
             #[error("Failed to decode the data using base 64 encoding")]
             DecodeFailure {
                 #[from]
@@ -33,7 +33,7 @@ cfg_if::cfg_if! {
                 #[from]
                 source: inout::NotEqualError,
             },
-        
+
             #[error("Failed to decode the data using base 64 encoding")]
             DecodeFailure {
                 #[from]

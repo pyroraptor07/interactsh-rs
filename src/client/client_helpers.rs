@@ -101,7 +101,7 @@ pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
             let server_msg = register_response
                 .text()
                 .await
-                .unwrap_or("Unknown error".to_string());
+                .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
 
             let inner_error = ClientRegistrationInnerError::RegistrationFailure {

@@ -56,7 +56,7 @@ impl ClientBuilder {
             .choose(&mut rand::thread_rng())
             .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
 
-        let new_builder = Self {
+        Self {
             rsa_key_size: Some(2048),
             server: Some(server.to_string()),
             auth_token: None,
@@ -64,9 +64,7 @@ impl ClientBuilder {
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,
             parse_logs: true,
-        };
-
-        new_builder
+        }
     }
 
     pub fn with_rsa_key_size(self, num_bits: usize) -> Self {

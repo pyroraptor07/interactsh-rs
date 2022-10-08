@@ -59,7 +59,7 @@ impl RegisteredClient {
         let poll_url = format!("https://{}/poll", self.server);
         let req_query_params = &[
             ("id", &self.correlation_id),
-            ("secret", &self.secret_key.expose_secret()),
+            ("secret", self.secret_key.expose_secret()),
         ];
 
         let mut get_request = self.reqwest_client.get(poll_url).query(req_query_params);
@@ -86,7 +86,7 @@ impl RegisteredClient {
             let server_msg = get_response
                 .text()
                 .await
-                .unwrap_or("Unknown error".to_string());
+                .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
             let error = ClientError::PollError {
                 server_msg,
@@ -120,11 +120,7 @@ impl RegisteredClient {
         Ok(results)
     }
 
-    fn decrypt_data(
-        &self,
-        aes_key: &Vec<u8>,
-        encrypted_data: &Vec<u8>,
-    ) -> Result<String, ClientError> {
+    fn decrypt_data(&self, aes_key: &[u8], encrypted_data: &[u8]) -> Result<String, ClientError> {
         let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
         let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);

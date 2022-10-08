@@ -17,7 +17,7 @@ cfg_if::cfg_if! {
                 source: openssl::error::ErrorStack,
                 backtrace: Backtrace,
             },
-        
+
             #[error("Failed to decode the data using base 64 encoding")]
             DecodeFailure {
                 #[from]
@@ -33,7 +33,7 @@ cfg_if::cfg_if! {
                 #[from]
                 source: openssl::error::ErrorStack,
             },
-        
+
             #[error("Failed to decode the data using base 64 encoding")]
             DecodeFailure {
                 #[from]
@@ -50,7 +50,7 @@ cfg_if::cfg_if! {
         pub enum RsaGenInnerError {
             #[error("Requested RSA key bit size is too large")]
             BitSize,
-        
+
             #[error("OpenSSL failed to generate the RSA private key")]
             OpenSsl {
                 #[from]
@@ -63,7 +63,7 @@ cfg_if::cfg_if! {
         pub enum RsaGenInnerError {
             #[error("Requested RSA key bit size is too large")]
             BitSize,
-        
+
             #[error("OpenSSL failed to generate the RSA private key")]
             OpenSsl {
                 #[from]

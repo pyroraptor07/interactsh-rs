@@ -6,17 +6,17 @@ use crate::errors::AesDecryptError;
 pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, AesDecryptError> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "rustcrypto")] {
-            rustcrypto_decrypt(aes_key, &encrypted_data)
+            rustcrypto_decrypt(aes_key, encrypted_data)
         } else if #[cfg(feature = "openssl")] {
-            openssl_decrypt(aes_key, &encrypted_data)
-        } 
+            openssl_decrypt(aes_key, encrypted_data)
+        }
     }
 }
 
 /// Decrypt the provided data using the provided plain-text AES key (using RustCrypto libraries)
 #[cfg(feature = "rustcrypto")]
 fn rustcrypto_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, AesDecryptError> {
-    use aes::cipher::{KeyIvInit, AsyncStreamCipher};
+    use aes::cipher::{AsyncStreamCipher, KeyIvInit};
     type Aes256CfbDec = cfb_mode::Decryptor<aes::Aes256>;
 
     let iv = &encrypted_data[0..16];
@@ -38,6 +38,6 @@ fn openssl_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, Aes
     let sliced_encrypted_data = &encrypted_data[16..];
 
     let decrypted_data = openssl::symm::decrypt(cipher, aes_key, Some(iv), sliced_encrypted_data)?;
-    
+
     Ok(decrypted_data)
 }
