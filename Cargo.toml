@@ -20,7 +20,7 @@ rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest", "d
 reqwest-native-tls = ["reqwest/default-tls"]
 reqwest-native-tls-vendored = ["reqwest-native-tls", "reqwest/native-tls-vendored"]
 reqwest-rustls-tls = ["reqwest/rustls-tls"]
-reqwest-socks-proxy = ["reqwest/socks"]
+# reqwest-socks-proxy = ["reqwest/socks"]
 
 # Other features
 async-compat = ["dep:async-compat"]

@@ -5,7 +5,7 @@ use secrecy::Secret;
 use svix_ksuid::*;
 use uuid::Uuid;
 
-use super::proxy::ClientProxy;
+// use super::proxy::ClientProxy;
 use super::unregistered::UnregisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::ClientBuildError;
@@ -25,7 +25,7 @@ pub struct ClientBuilder {
     rsa_key_size: Option<usize>,
     server: Option<String>,
     auth_token: Option<Secret<String>>,
-    proxies: Option<Vec<ClientProxy>>,
+    // proxies: Option<Vec<ClientProxy>>,
     timeout: Option<Duration>,
     ssl_verify: bool,
     parse_logs: bool,
@@ -38,7 +38,7 @@ impl ClientBuilder {
             rsa_key_size: None,
             server: None,
             auth_token: None,
-            proxies: None,
+            // proxies: None,
             timeout: None,
             ssl_verify: false,
             parse_logs: true,
@@ -60,7 +60,7 @@ impl ClientBuilder {
             rsa_key_size: Some(2048),
             server: Some(server.to_string()),
             auth_token: None,
-            proxies: None,
+            // proxies: None,
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,
             parse_logs: true,
@@ -97,21 +97,21 @@ impl ClientBuilder {
         }
     }
 
-    /// Set an optional proxy URL that the client can use.
-    ///
-    /// This can be set more than once; each new proxy URL will be added
-    /// to a list of proxies that the client will try.
-    pub fn with_proxy(self, proxy: ClientProxy) -> Self {
-        let proxies = match self.proxies {
-            Some(mut proxies) => {
-                proxies.push(proxy);
-                Some(proxies)
-            }
-            None => Some(vec![proxy]),
-        };
+    // /// Set an optional proxy URL that the client can use.
+    // ///
+    // /// This can be set more than once; each new proxy URL will be added
+    // /// to a list of proxies that the client will try.
+    // pub fn with_proxy(self, proxy: ClientProxy) -> Self {
+    //     let proxies = match self.proxies {
+    //         Some(mut proxies) => {
+    //             proxies.push(proxy);
+    //             Some(proxies)
+    //         }
+    //         None => Some(vec![proxy]),
+    //     };
 
-        Self { proxies, ..self }
-    }
+    //     Self { proxies, ..self }
+    // }
 
     /// Set the timeout value for server requests.
     pub fn with_timeout(self, timeout: Duration) -> Self {
@@ -163,18 +163,18 @@ impl ClientBuilder {
         // Build the reqwest client
         let mut reqwest_client_builder = reqwest::Client::builder();
 
-        reqwest_client_builder = match self.proxies {
-            None => reqwest_client_builder,
-            Some(proxies) => {
-                let mut builder = reqwest_client_builder;
+        // reqwest_client_builder = match self.proxies {
+        //     None => reqwest_client_builder,
+        //     Some(proxies) => {
+        //         let mut builder = reqwest_client_builder;
 
-                for proxy in proxies.into_iter() {
-                    builder = builder.proxy(proxy.into_reqwest_proxy()?);
-                }
+        //         for proxy in proxies.into_iter() {
+        //             builder = builder.proxy(proxy.into_reqwest_proxy()?);
+        //         }
 
-                builder
-            }
-        };
+        //         builder
+        //     }
+        // };
 
         let timeout = self.timeout.unwrap_or(Duration::from_secs(15));
         reqwest_client_builder = reqwest_client_builder.timeout(timeout);
