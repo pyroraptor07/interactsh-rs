@@ -57,11 +57,13 @@ async-compat = { version = "0.2", optional = true }
 # tracing = { version = "0.1", optional = true }
 
 [dev-dependencies]
+async-compat = "0.2"
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
 async-std = { version = "1", features = ["attributes"] }
 smol = "1"
 hex = "0.4"
 fake = "2.5"
+trust-dns-resolver = "0.22"
 
 [build-dependencies]
 rustversion = "1"

@@ -230,7 +230,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Dns { .. } => {}
-                    _other_entry => panic!("DNS log did not parse to DNS variant"),
+                    _ => panic!("DNS log did not parse to DNS variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("DNS log did not parse at all"),
@@ -263,7 +263,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Dns { .. } => {}
-                    _other_entry => panic!("DNS log did not parse to DNS variant"),
+                    _ => panic!("DNS log did not parse to DNS variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("DNS log did not parse at all"),
@@ -294,7 +294,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Http { .. } => {}
-                    _other_entry => panic!("HTTP log did not parse to HTTP variant"),
+                    _ => panic!("HTTP log did not parse to HTTP variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("HTTP log did not parse at all"),
@@ -320,7 +320,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Ftp { .. } => {}
-                    _other_entry => panic!("FTP log did not parse to FTP variant"),
+                    _ => panic!("FTP log did not parse to FTP variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("FTP log did not parse at all"),
@@ -351,7 +351,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Ldap { .. } => {}
-                    _other_entry => panic!("LDAP log did not parse to LDAP variant"),
+                    _ => panic!("LDAP log did not parse to LDAP variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("LDAP log did not parse at all"),
@@ -375,7 +375,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Smb { .. } => {}
-                    _other_entry => panic!("SMB log did not parse to SMB variant"),
+                    _ => panic!("SMB log did not parse to SMB variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("SMB log did not parse at all"),
@@ -406,7 +406,7 @@ mod tests {
             LogEntry::ParsedLog(parsed_log) => {
                 match parsed_log {
                     ParsedLogEntry::Smtp { .. } => {}
-                    _other_entry => panic!("SMTP log did not parse to SMTP variant"),
+                    _ => panic!("SMTP log did not parse to SMTP variant"),
                 }
             }
             LogEntry::RawLog(_) => panic!("SMTP log did not parse at all"),
