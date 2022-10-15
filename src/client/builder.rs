@@ -1,3 +1,4 @@
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
 use rand::seq::SliceRandom;
@@ -29,6 +30,7 @@ pub struct ClientBuilder {
     timeout: Option<Duration>,
     ssl_verify: bool,
     parse_logs: bool,
+    dns_override: Option<IpAddr>,
 }
 
 impl ClientBuilder {
@@ -42,6 +44,7 @@ impl ClientBuilder {
             timeout: None,
             ssl_verify: false,
             parse_logs: true,
+            dns_override: None,
         }
     }
 
@@ -64,6 +67,7 @@ impl ClientBuilder {
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,
             parse_logs: true,
+            dns_override: None,
         }
     }
 
@@ -132,6 +136,16 @@ impl ClientBuilder {
         Self { parse_logs, ..self }
     }
 
+    /// Sets an option on the client to override normal DNS
+    /// resolution for the server and instead use the provided
+    /// IP address.
+    pub fn set_dns_override(self, server_ip_address: IpAddr) -> Self {
+        Self {
+            dns_override: Some(server_ip_address),
+            ..self
+        }
+    }
+
     /// Builds an [UnregisteredClient](crate::client::UnregisteredClient).
     ///
     /// The server must be set and the RSA key generated in order for
@@ -186,6 +200,14 @@ impl ClientBuilder {
 
         reqwest_client_builder =
             reqwest_client_builder.danger_accept_invalid_certs(!self.ssl_verify);
+
+        reqwest_client_builder = match self.dns_override {
+            Some(server_ip_address) => {
+                let socket_addr = SocketAddr::new(server_ip_address, 443);
+                reqwest_client_builder.resolve(server.as_str(), socket_addr)
+            }
+            None => reqwest_client_builder,
+        };
 
         let reqwest_client = reqwest_client_builder.build()?;
 
@@ -244,6 +266,7 @@ mod tests {
     }
 
     #[test]
+    // Note: does not test dns override; that is tested in integration testing
     fn build_with_all_options_succeeds() {
         let mut rng = rand::thread_rng();
 
