@@ -138,56 +138,329 @@ pub enum ParsedLogEntry {
 
 mod timestamp_unixstr_parse {
     use serde::{de, Deserialize, Deserializer};
-    use time::format_description::well_known::Iso8601;
+    use time::format_description::well_known::Rfc3339;
     use time::OffsetDateTime;
 
     pub fn deserialize<'a, D: Deserializer<'a>>(
         deserializer: D,
     ) -> Result<OffsetDateTime, D::Error> {
-        OffsetDateTime::parse(<_>::deserialize(deserializer)?, &Iso8601::DEFAULT)
+        OffsetDateTime::parse(<_>::deserialize(deserializer)?, &Rfc3339)
             .map_err(|e| de::Error::custom(format!("{}", e)))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use fake::{faker, Fake};
+    use rand::distributions::Slice;
+    use rand::Rng;
+    use serde_json::{json, Value};
+    use svix_ksuid::*;
+    use time::format_description::well_known::Rfc3339;
+    use time::OffsetDateTime;
+
+    use super::*;
+
+    fn get_random_id() -> String {
+        let ksuid_a = Ksuid::new(None, None).to_string().to_ascii_lowercase();
+        let ksuid_b = Ksuid::new(None, None).to_string().to_ascii_lowercase();
+        let mut random_id = format!("{}{}", ksuid_a, ksuid_b);
+        random_id.truncate(33);
+
+        random_id
+    }
+
+    fn get_timestamp() -> String {
+        OffsetDateTime::now_utc().format(&Rfc3339).unwrap()
+    }
+
+    fn get_ip_address() -> String {
+        faker::internet::en::IP().fake()
+    }
+
+    fn get_paragraph() -> String {
+        faker::lorem::en::Paragraph(1..2).fake()
+    }
+
+    fn get_email_address() -> String {
+        faker::internet::en::SafeEmail().fake()
+    }
+
+    fn get_random_dns_q_type() -> String {
+        let mut rng = rand::thread_rng();
+        let q_types = ["A", "NS", "CNAME", "SOA", "PTR", "MX", "TXT", "AAAA"];
+        let q_types_dist = Slice::new(&q_types).unwrap();
+
+        rng.sample(q_types_dist).to_string()
+    }
+
+    fn try_parse_json(json_value: Value) -> LogEntry {
+        let json_value_string =
+            serde_json::to_string(&json_value).expect("Unable to parse json to string");
+        LogEntry::try_parse_log(&json_value_string)
+    }
+
+    fn get_raw_log(json_value: Value) -> LogEntry {
+        let json_value_string =
+            serde_json::to_string(&json_value).expect("Unable to parse json to string");
+        LogEntry::return_raw_log(&json_value_string)
+    }
+
     #[test]
-    fn log_entry_successfully_parses_valid_dns_log() {
-        todo!()
+    fn log_entry_successfully_parses_valid_dns_log_no_qtype() {
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+        let raw_response = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "dns",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "raw-response": raw_response,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Dns { .. } => {}
+                    _other_entry => panic!("DNS log did not parse to DNS variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("DNS log did not parse at all"),
+        }
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_dns_log_with_qtype() {
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+        let raw_response = get_paragraph();
+        let q_type = get_random_dns_q_type();
+
+        let json_log = json!({
+            "protocol": "dns",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "q-type": q_type,
+            "raw-request": raw_request,
+            "raw-response": raw_response,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Dns { .. } => {}
+                    _other_entry => panic!("DNS log did not parse to DNS variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("DNS log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_successfully_parses_valid_http_log() {
-        todo!()
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+        let raw_response = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "http",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "raw-response": raw_response,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Http { .. } => {}
+                    _other_entry => panic!("HTTP log did not parse to HTTP variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("HTTP log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_successfully_parses_valid_ftp_log() {
-        todo!()
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "ftp",
+            "raw-request": raw_request,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Ftp { .. } => {}
+                    _other_entry => panic!("FTP log did not parse to FTP variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("FTP log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_successfully_parses_valid_ldap_log() {
-        todo!()
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+        let raw_response = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "ldap",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "raw-response": raw_response,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Ldap { .. } => {}
+                    _other_entry => panic!("LDAP log did not parse to LDAP variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("LDAP log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_successfully_parses_valid_smb_log() {
-        todo!()
+        let timestamp = get_timestamp();
+        let raw_request = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "smb",
+            "raw-request": raw_request,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Smb { .. } => {}
+                    _other_entry => panic!("SMB log did not parse to SMB variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("SMB log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_successfully_parses_valid_smtp_log() {
-        todo!()
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address = get_ip_address();
+        let raw_request = get_paragraph();
+        let email_address = get_email_address();
+
+        let json_log = json!({
+            "protocol": "smtp",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "smtp-from": email_address,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(parsed_log) => {
+                match parsed_log {
+                    ParsedLogEntry::Smtp { .. } => {}
+                    _other_entry => panic!("SMTP log did not parse to SMTP variant"),
+                }
+            }
+            LogEntry::RawLog(_) => panic!("SMTP log did not parse at all"),
+        }
     }
 
     #[test]
     fn log_entry_returns_raw_log_for_invalid_log() {
-        todo!()
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address: String = get_ip_address();
+        let raw_request: String = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "http",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "remote-address": remote_address,
+            "timestamp": timestamp,
+            "unexpected-field": "unexpected field"
+        });
+
+        let log_parse_result = try_parse_json(json_log);
+
+        match log_parse_result {
+            LogEntry::ParsedLog(_) => panic!("Expected raw log, got a parsed log"),
+            LogEntry::RawLog(_) => {}
+        }
     }
 
     #[test]
     fn log_entry_successfully_returns_raw_log() {
-        todo!()
+        let random_id = get_random_id();
+        let timestamp = get_timestamp();
+        let remote_address: String = get_ip_address();
+        let raw_request: String = get_paragraph();
+        let raw_response: String = get_paragraph();
+
+        let json_log = json!({
+            "protocol": "http",
+            "unique-id": random_id,
+            "full-id": random_id,
+            "raw-request": raw_request,
+            "raw-response": raw_response,
+            "remote-address": remote_address,
+            "timestamp": timestamp
+        });
+
+        let log_entry = get_raw_log(json_log);
+
+        match log_entry {
+            LogEntry::ParsedLog(_) => panic!("Expected raw log, got a parsed log"),
+            LogEntry::RawLog(_) => {}
+        }
     }
 }

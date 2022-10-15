@@ -214,33 +214,75 @@ impl Default for ClientBuilder {
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
+    use rand::{Rng, RngCore};
+
+    use super::*;
+
     #[test]
     fn default_build_succeeds() {
-        todo!()
+        let _builder = ClientBuilder::default()
+            .build()
+            .expect("Default build failed");
     }
 
     #[test]
     fn empty_builder_fails() {
-        todo!()
+        let _builder = ClientBuilder::new()
+            .build()
+            .expect_err("Empty builder did not fail as expected");
     }
 
     #[test]
     fn build_with_server_and_rsa_only_succeeds() {
-        todo!()
+        let _builder = ClientBuilder::new()
+            .with_server("oast.pro".into())
+            .with_rsa_key_size(2048)
+            .build()
+            .expect("Build with only server and rsa failed");
     }
 
     #[test]
     fn build_with_all_options_succeeds() {
-        todo!()
+        let mut rng = rand::thread_rng();
+
+        // Generate a random token string
+        let mut rand_bytes: [u8; 32] = [0; 32];
+        rng.fill_bytes(&mut rand_bytes);
+        let token = hex::encode(rand_bytes);
+
+        // Get a random duration in seconds
+        let duration_secs = rng.gen_range(5..=30);
+
+        // Generate boolean values
+        let verify_ssl = rng.gen_bool(1.0 / 2.0);
+        let parse_logs = rng.gen_bool(1.0 / 2.0);
+
+        let _builder = ClientBuilder::new()
+            .with_server("oast.pro".into())
+            .with_rsa_key_size(2048)
+            .with_auth_token(token)
+            .with_timeout(Duration::from_secs(duration_secs))
+            .verify_ssl(verify_ssl)
+            .parse_logs(parse_logs)
+            .build()
+            .expect("Build with all options failed");
     }
 
     #[test]
     fn build_with_only_server_fails() {
-        todo!()
+        let _builder = ClientBuilder::new()
+            .with_server("oast.pro".into())
+            .build()
+            .expect_err("Server-only build did not fail as expected");
     }
 
     #[test]
     fn build_with_only_rsa_fails() {
-        todo!()
+        let _builder = ClientBuilder::new()
+            .with_rsa_key_size(2048)
+            .build()
+            .expect_err("RSA-only build did not fail as expected");
     }
 }

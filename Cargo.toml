@@ -60,6 +60,8 @@ async-compat = { version = "0.2", optional = true }
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
 async-std = { version = "1", features = ["attributes"] }
 smol = "1"
+hex = "0.4"
+fake = "2.5"
 
 [build-dependencies]
 rustversion = "1"
