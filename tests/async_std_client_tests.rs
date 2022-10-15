@@ -1,3 +1,4 @@
+#[cfg(feature = "async-compat")]
 mod shared;
 
 #[cfg(feature = "async-compat")]
