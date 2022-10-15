@@ -5,11 +5,11 @@ use super::registered::RegisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::ClientRegistrationError;
 
-/// The client type returned by the [ClientBuilder](crate::client::builder::ClientBuilder)
+/// The client type returned by the [ClientBuilder](crate::client::ClientBuilder)
 /// build function.
 ///
 /// The register function must be called on this client in order to turn it
-/// into a [RegisteredClient](crate::client::registered::RegisteredClient), which can
+/// into a [RegisteredClient](crate::client::RegisteredClient), which can
 /// be used to poll an Interactsh server.
 #[derive(Debug, Clone)]
 pub struct UnregisteredClient {
@@ -27,9 +27,9 @@ pub struct UnregisteredClient {
 impl UnregisteredClient {
     /// Registers this client with the Interactsh server it was configured for.
     ///
-    /// On a successful result, this returns a [RegisteredClient](crate::client::registered::RegisteredClient)
+    /// On a successful result, this returns a [RegisteredClient](crate::client::RegisteredClient)
     /// that can be used to poll the server. If the registration fails, this returns
-    /// a [ClientRegistrationError](crate::errors::client_errors::ClientRegistrationError), which
+    /// a [ClientRegistrationError](crate::errors::ClientRegistrationError), which
     /// contains a clone of this client if another try is needed.
     pub async fn register(
         self,

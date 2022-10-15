@@ -4,13 +4,13 @@ use serde::Deserialize;
 use time::OffsetDateTime;
 
 
-/// Type returned when a [RegisteredClient](crate::client::registered::RegisteredClient)
+/// Type returned when a [RegisteredClient](crate::client::RegisteredClient)
 /// polls a server and obtains new interaction logs
 ///
 /// Whether or not a raw log or a parsed log is
 /// returned depends on the following:
 /// 1. If the client was built with the "parse logs" option set to true
-/// (see [ClientBuilder](crate::client::builder::ClientBuilder))
+/// (see [ClientBuilder](crate::client::ClientBuilder))
 /// 2. If the logs are able to be parsed (if the logs are unable to be parsed, then the raw
 /// logs are returned)
 #[derive(Debug)]
@@ -146,5 +146,48 @@ mod timestamp_unixstr_parse {
     ) -> Result<OffsetDateTime, D::Error> {
         OffsetDateTime::parse(<_>::deserialize(deserializer)?, &Iso8601::DEFAULT)
             .map_err(|e| de::Error::custom(format!("{}", e)))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn log_entry_successfully_parses_valid_dns_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_http_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_ftp_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_ldap_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_smb_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_parses_valid_smtp_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_returns_raw_log_for_invalid_log() {
+        todo!()
+    }
+
+    #[test]
+    fn log_entry_successfully_returns_raw_log() {
+        todo!()
     }
 }

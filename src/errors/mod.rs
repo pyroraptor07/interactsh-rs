@@ -1,4 +1,4 @@
-//! The errors used within this library
+//! The errors used within this crate
 
 
 #[cfg(feature = "rustcrypto")]
@@ -12,6 +12,6 @@ mod client_errors;
 
 pub use client_errors::*;
 #[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
-pub use openssl_errors::*;
+pub(crate) use openssl_errors::*;
 #[cfg(feature = "rustcrypto")]
-pub use rustcrypto_errors::*;
+pub(crate) use rustcrypto_errors::*;

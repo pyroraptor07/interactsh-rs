@@ -36,6 +36,6 @@ async fn run_client() {
     }
 
     // Once done, deregister the client
-    let _ = client.deregister().await.unwrap();
+    client.deregister().await.unwrap();
 }
 ```

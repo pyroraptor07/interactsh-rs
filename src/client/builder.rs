@@ -20,7 +20,7 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     // "oast.me",
 ];
 
-/// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
+/// Builds an [UnregisteredClient](crate::client::UnregisteredClient)
 pub struct ClientBuilder {
     rsa_key_size: Option<usize>,
     server: Option<String>,
@@ -67,6 +67,7 @@ impl ClientBuilder {
         }
     }
 
+    /// Sets the RSA key size that the builder will generate for the client.
     pub fn with_rsa_key_size(self, num_bits: usize) -> Self {
         Self {
             rsa_key_size: Some(num_bits),
@@ -74,7 +75,7 @@ impl ClientBuilder {
         }
     }
 
-    /// Set the Interactsh server that the client will connect to.
+    /// Sets the Interactsh server that the client will connect to.
     pub fn with_server(self, server: String) -> Self {
         Self {
             server: Some(server),
@@ -82,7 +83,7 @@ impl ClientBuilder {
         }
     }
 
-    /// Set an optional auth token that the client will use to authenticate
+    /// Sets an optional auth token that the client will use to authenticate
     /// with the Interactsh server.
     ///
     /// If this is not set, then no auth header will be sent to the
@@ -95,7 +96,7 @@ impl ClientBuilder {
         }
     }
 
-    // /// Set an optional proxy URL that the client can use.
+    // /// Sets an optional proxy URL that the client can use.
     // ///
     // /// This can be set more than once; each new proxy URL will be added
     // /// to a list of proxies that the client will try.
@@ -111,7 +112,7 @@ impl ClientBuilder {
     //     Self { proxies, ..self }
     // }
 
-    /// Set the timeout value for server requests.
+    /// Sets the timeout value for server requests.
     pub fn with_timeout(self, timeout: Duration) -> Self {
         Self {
             timeout: Some(timeout),
@@ -131,13 +132,13 @@ impl ClientBuilder {
         Self { parse_logs, ..self }
     }
 
-    /// Builds an [UnregisteredClient](crate::client::unregistered::UnregisteredClient).
+    /// Builds an [UnregisteredClient](crate::client::UnregisteredClient).
     ///
     /// The server must be set and the RSA key generated in order for
     /// this to succeed. If the build succeeds, the
     /// register function must be called on the returned
-    ///  [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
-    /// to turn it into a [RegisteredClient](crate::client::registered::RegisteredClient).
+    ///  [UnregisteredClient](crate::client::UnregisteredClient)
+    /// to turn it into a [RegisteredClient](crate::client::RegisteredClient).
     pub fn build(self) -> Result<UnregisteredClient, ClientBuildError> {
         // Ensure rsa_key and server are set
         let rsa_key_size = self
@@ -208,5 +209,38 @@ impl ClientBuilder {
 impl Default for ClientBuilder {
     fn default() -> Self {
         Self::default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn default_build_succeeds() {
+        todo!()
+    }
+
+    #[test]
+    fn empty_builder_fails() {
+        todo!()
+    }
+
+    #[test]
+    fn build_with_server_and_rsa_only_succeeds() {
+        todo!()
+    }
+
+    #[test]
+    fn build_with_all_options_succeeds() {
+        todo!()
+    }
+
+    #[test]
+    fn build_with_only_server_fails() {
+        todo!()
+    }
+
+    #[test]
+    fn build_with_only_rsa_fails() {
+        todo!()
     }
 }

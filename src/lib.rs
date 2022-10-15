@@ -1,5 +1,5 @@
 //! # Interactsh-rs
-//! A Rust client library for getting interaction logs from Interact.sh servers.
+//! A Rust client library for getting interaction logs from Interactsh servers.
 //!
 //! ### Basic Use
 //! ```
@@ -25,16 +25,16 @@
 //!     loop {
 //!         thread::sleep(Duration::from_secs(5));
 //!
-//!         let logs = client.poll().await.unwrap();
-//!         if logs.is_empty() {
-//!             continue;
-//!         }
+//!         let logs = match client.poll().await.unwrap() {
+//!             Some(logs) => logs,
+//!             None => continue,
+//!         };
 //!
 //!         // ...Do something with the returned logs...
 //!     }
 //!
 //!     // Once done, deregister the client
-//!     let _ = client.deregister().await.unwrap();
+//!     client.deregister().await.unwrap();
 //! }
 //! ```
 
@@ -57,8 +57,5 @@ pub mod client;
 pub mod errors;
 
 pub mod prelude {
-    pub use crate::client::builder::ClientBuilder;
-    pub use crate::client::interaction_log::{DnsQType, LogEntry, ParsedLogEntry, RawLog};
-    pub use crate::client::registered::RegisteredClient;
-    pub use crate::client::unregistered::UnregisteredClient;
+    pub use crate::client::*;
 }

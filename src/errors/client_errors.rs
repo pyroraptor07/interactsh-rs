@@ -1,5 +1,4 @@
-//! The error types used by the [Client](crate::client::Client) and
-//! [ClientBuilder](crate::client::ClientBuilder) structs
+//! Error types for the [Client](crate::client) module.
 
 #[cfg(feature = "nightly")]
 use std::backtrace::Backtrace;
@@ -9,27 +8,29 @@ use thiserror::Error;
 use crate::client::client_helpers::Client;
 
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "nightly")] {
-        #[derive(Error, Debug)]
-        #[error("Failed to create a proxy for reqwest")]
-        pub struct ProxyConvertError {
-            #[from]
-            source: reqwest::Error,
-            backtrace: Backtrace,
-        }
-    } else {
-        #[derive(Error, Debug)]
-        #[error("Failed to create a proxy for reqwest")]
-        pub struct ProxyConvertError {
-            #[from]
-            source: reqwest::Error,
-        }
-    }
-}
+// cfg_if::cfg_if! {
+//     if #[cfg(feature = "nightly")] {
+//         #[derive(Error, Debug)]
+//         #[error("Failed to create a proxy for reqwest")]
+//         pub struct ProxyConvertError {
+//             #[from]
+//             source: reqwest::Error,
+//             backtrace: Backtrace,
+//         }
+//     } else {
+//         #[derive(Error, Debug)]
+//         #[error("Failed to create a proxy for reqwest")]
+//         pub struct ProxyConvertError {
+//             #[from]
+//             source: reqwest::Error,
+//         }
+//     }
+// }
+
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "nightly")] {
+        /// Inner error type for [ClientRegistrationError]
         #[derive(Error, Debug)]
         pub enum ClientRegistrationInnerError {
             #[error("Failed to send the request to the server")]
@@ -49,6 +50,7 @@ cfg_if::cfg_if! {
             },
         }
     } else {
+        /// Inner error type for [ClientRegistrationError]
         #[derive(Error, Debug)]
         pub enum ClientRegistrationInnerError {
             #[error("Failed to send the request to the server")]
@@ -70,6 +72,7 @@ cfg_if::cfg_if! {
 }
 
 
+/// Error returned during client registration or deregistration.
 #[derive(Error, Debug)]
 #[error("{error}")]
 pub struct ClientRegistrationError<T> {
@@ -95,12 +98,12 @@ cfg_if::cfg_if! {
         /// The error type used by the [ClientBuilder](crate::client::ClientBuilder)
         #[derive(Error, Debug)]
         pub enum ClientBuildError {
-            #[error("Failed to set proxy")]
-            InvalidProxy {
-                #[from]
-                source: ProxyConvertError,
-                backtrace: Backtrace,
-            },
+            // #[error("Failed to set proxy")]
+            // InvalidProxy {
+            //     #[from]
+            //     source: ProxyConvertError,
+            //     backtrace: Backtrace,
+            // },
 
             #[error("Builder failed to generate the RSA private key")]
             RsaGen {
@@ -140,11 +143,11 @@ cfg_if::cfg_if! {
         /// The error type used by the [ClientBuilder](crate::client::ClientBuilder)
         #[derive(Error, Debug)]
         pub enum ClientBuildError {
-            #[error("Failed to set proxy")]
-            InvalidProxy {
-                #[from]
-                source: ProxyConvertError,
-            },
+            // #[error("Failed to set proxy")]
+            // InvalidProxy {
+            //     #[from]
+            //     source: ProxyConvertError,
+            // },
 
             #[error("Builder failed to generate the RSA private key")]
             RsaGen {
@@ -182,9 +185,10 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "nightly")] {
-        /// The error type used by the [Client](crate::client::Client)
+        /// The error type used by the [RegisteredClient](crate::client::RegisteredClient)
+        /// when polling the server
         #[derive(Error, Debug)]
-        pub enum ClientError {
+        pub enum ClientPollError {
             #[error("Client failed to deregister with the Interactsh server")]
             Deregister,
 
@@ -223,9 +227,10 @@ cfg_if::cfg_if! {
             },
         }
     } else {
-        /// The error type used by the [Client](crate::client::Client)
+        /// The error type used by the [RegisteredClient](crate::client::RegisteredClient)
+        /// when polling the server
         #[derive(Error, Debug)]
-        pub enum ClientError {
+        pub enum ClientPollError {
             #[error("Client failed to deregister with the Interactsh server")]
             Deregister,
 

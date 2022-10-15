@@ -6,9 +6,9 @@ use super::client_helpers::{self, DeregisterData, PollResponse};
 use super::interaction_log::LogEntry;
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::errors::{ClientError, ClientRegistrationError};
+use crate::errors::{ClientPollError, ClientRegistrationError};
 
-/// The client type returned when an [UnregisteredClient](crate::client::unregistered::UnregisteredClient)
+/// The client type returned when an [UnregisteredClient](crate::client::UnregisteredClient)
 /// successfully registers with its configured Interactsh server.
 #[derive(Debug, Clone)]
 pub struct RegisteredClient {
@@ -32,7 +32,7 @@ impl RegisteredClient {
     /// Deregisters the [RegisteredClient] with the Interactsh server.
     ///
     /// If the deregistration fails, this returns a
-    /// [ClientRegistrationError](crate::errors::client_errors::ClientRegistrationError),
+    /// [ClientRegistrationError](crate::errors::ClientRegistrationError),
     /// which contains a clone of this client if another try is needed.
     pub async fn deregister(self) -> Result<(), ClientRegistrationError<RegisteredClient>> {
         let post_data = DeregisterData {
@@ -52,7 +52,7 @@ impl RegisteredClient {
     }
 
     /// Polls the Interactsh server for any new logs.
-    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, ClientError> {
+    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, ClientPollError> {
         let poll_url = format!("https://{}/poll", self.server);
         let req_query_params = &[
             ("id", &self.correlation_id),
@@ -85,7 +85,7 @@ impl RegisteredClient {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
-            let error = ClientError::PollError {
+            let error = ClientPollError::PollError {
                 server_msg,
                 status_code,
             };
@@ -123,7 +123,11 @@ impl RegisteredClient {
         Ok(Some(results))
     }
 
-    fn decrypt_data(&self, aes_key: &[u8], encrypted_data: &[u8]) -> Result<String, ClientError> {
+    fn decrypt_data(
+        &self,
+        aes_key: &[u8],
+        encrypted_data: &[u8],
+    ) -> Result<String, ClientPollError> {
         let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
         let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
