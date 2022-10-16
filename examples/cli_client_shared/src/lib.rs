@@ -243,11 +243,15 @@ fn print_log_type(log_type: &str) -> String {
 }
 
 fn print_normal_param(param: &str, param_data: &str) -> String {
+    print_normal_param_nocolor(param, style(param_data).blue().to_string())
+}
+
+fn print_normal_param_nocolor(param: &str, param_data: String) -> String {
     format!(
         "{}{} {}",
         style(param).bold(),
         style(":").bold(),
-        style(param_data).blue()
+        param_data,
     )
 }
 
@@ -261,9 +265,10 @@ fn print_raw_param(param: &str, param_data: &str) -> String {
 }
 
 fn print_timestamp(timestamp: &OffsetDateTime) -> String {
-    let formatted_timestamp = timestamp
-        .format(&Rfc3339)
-        .unwrap_or_else(|_| style("INVALID TIMESTAMP").red().to_string());
+    let formatted_timestamp = match timestamp.format(&Rfc3339) {
+        Ok(timestamp) => style(timestamp).blue().to_string(),
+        Err(_) => style("INVALID TIMESTAMP").red().to_string(),
+    };
 
-    print_normal_param("timestamp", formatted_timestamp.as_str())
+    print_normal_param_nocolor("timestamp", formatted_timestamp)
 }
