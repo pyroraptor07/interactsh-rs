@@ -1,0 +1,32 @@
+[package]
+name = "cli_client_asyncstd"
+version = "0.1.0-beta"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Interactsh-rs
+# This uses the Rust Crypto crates for cryptography and Rustls for TLS
+# These are the same as the default features
+interactsh-rs = { path = "../..", default-features = false, features = ['rustcrypto', 'reqwest-rustls-tls', 'async-compat'] }
+
+# To use OpenSSL instead:
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl', 'reqwest-native-tls', 'async-compat'] }
+
+# For vendored OpenSSL:
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl-vendored', 'reqwest-native-tls-vendored', 'async-compat'] }
+
+# Async runtime
+async-std = { version = "1", features = ["attributes"] }
+
+
+# Other dependencies
+async-channel = "1.7"
+color-eyre = "0.6"
+clap = { version = "4", features = ["derive"] }
+cli_client_shared = { path = "../cli_client_shared", features = ["non-tokio"] }
+futures = "0.3.24"
+
+# For color-eyre
+[profile.dev.package.backtrace]
+opt-level = 3

@@ -1,0 +1,29 @@
+[package]
+name = "cli_client_tokio"
+version = "0.1.0-beta"
+edition = "2021"
+publish = false
+
+[dependencies]
+# Interactsh-rs
+# This uses the Rust Crypto crates for cryptography and Rustls for TLS
+interactsh-rs = { path = "../..", default-features = false, features = ['rustcrypto', 'reqwest-rustls-tls'] }
+
+# To use OpenSSL instead:
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl', 'reqwest-native-tls'] }
+
+# For vendored OpenSSL:
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl-vendored', 'reqwest-native-tls-vendored'] }
+
+# Async runtime
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread", "sync"] }
+
+
+# Other dependencies
+color-eyre = "0.6"
+clap = { version = "4", features = ["derive"] }
+cli_client_shared = { path = "../cli_client_shared", features = ["tokio"] }
+
+# For color-eyre
+[profile.dev.package.backtrace]
+opt-level = 3

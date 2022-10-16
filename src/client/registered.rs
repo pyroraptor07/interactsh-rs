@@ -3,10 +3,10 @@ use async_compat::Compat;
 use secrecy::{ExposeSecret, Secret};
 
 use super::client_helpers::{self, DeregisterData, PollResponse};
-use super::interaction_log::LogEntry;
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::errors::{ClientPollError, ClientRegistrationError};
+use crate::interaction_log::LogEntry;
 
 /// The client type returned when an [UnregisteredClient](crate::client::UnregisteredClient)
 /// successfully registers with its configured Interactsh server.

@@ -2,3 +2,8 @@
 /Cargo.lock
 /docker
 /.env
+
+/examples/cli_client_shared/target
+/examples/cli_client_tokio/target
+/examples/cli_client_asyncstd/target
+/examples/cli_client_smol/target

@@ -1,0 +1,31 @@
+[package]
+name = "cli_client_shared"
+version = "0.1.0-beta"
+edition = "2021"
+publish = false
+authors = ["Matt George <pyroraptor07@gmail.com>"]
+description = "A shared library for the Interactsh-rs CLI client examples"
+
+[features]
+tokio = ['indicatif/tokio', 'dep:tokio']
+non-tokio = ['dep:async-channel', 'ctrlc', "dep:color-eyre"]
+
+[dependencies]
+async-channel = { version = "1.7", optional = true }
+clap = { version = "4", features = ["derive"] }
+color-eyre = { version = "0.6", optional = true }
+console = "0.15"
+ctrlc = { version = "3.2.3", optional = true }
+indicatif = "0.17"
+interactsh-rs = { path = "../..", default-features = false }
+time = { version = "0.3.14", features = ["formatting"] }
+
+[dependencies.tokio]
+version = "1"
+default-features = false
+features = ['rt', 'sync', 'signal']
+optional = true
+
+# For color-eyre
+[profile.dev.package.backtrace]
+opt-level = 3

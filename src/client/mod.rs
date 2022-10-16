@@ -95,12 +95,10 @@
 pub(crate) mod client_helpers;
 
 mod builder;
-mod interaction_log;
 // pub mod proxy;
 mod registered;
 mod unregistered;
 
 pub use builder::*;
-pub use interaction_log::*;
 pub use registered::*;
 pub use unregistered::*;
