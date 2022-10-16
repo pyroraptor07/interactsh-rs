@@ -1,7 +1,10 @@
 //! # Interactsh-rs
-//! A Rust client library for getting interaction logs from Interactsh servers.
+//! A Rust client library for getting interaction logs from
+//! [Interactsh](https://github.com/projectdiscovery/interactsh) servers. See
+//! a basic example below; check out the [examples](https://github.com/pyroraptor07/interactsh-rs/tree/main/examples)
+//! or the [client] module docs for more detailed use.
 //!
-//! ### Basic Use
+//! ## Basic Use
 //! ```
 //! use std::time::Duration;
 //! use std::thread;
@@ -37,6 +40,34 @@
 //!     client.deregister().await.unwrap();
 //! }
 //! ```
+//!
+//! ## Feature Flags - Cryptography
+//! This crate supports using either the [RustCrypto](https://github.com/RustCrypto) libraries
+//! or OpenSSL for decrypting server logs:
+//! - `rustcrypto`
+//! - `openssl`
+//! - `openssl-vendored`
+//!
+//! One of these must be enabled in order to use the crate
+//! (unless you just need the [interaction_log] module). `rustcrypto` is enabled
+//! by default.
+//!
+//! ## Feature Flags - TLS
+//! To enable either [Rustls](https://github.com/rustls/rustls) or OS native
+//! TLS, use one of the following feature flags:
+//! - `reqwest-rustls-tls`
+//! - `reqwest-native-tls`
+//! - `reqwest-native-tls-vendored`
+//!
+//! One of these must be enabled as well to use the crate as a client.
+//! `reqwest-rustls-tls` is enabled by default.
+//!
+//! ## Feature Flags - Async runtime compatibility
+//! This crate supports the [tokio](https://github.com/tokio-rs/tokio),
+//! [async-std](https://github.com/async-rs/async-std), and
+//! [smol](https://github.com/smol-rs/smol) async runtimes. In order to use
+//! non-tokio runtimes with this crate, use the `async-compat` feature flag
+//! (enabled by default).
 
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
 #![cfg_attr(feature = "nightly", feature(error_generic_member_access))]

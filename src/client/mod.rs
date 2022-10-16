@@ -11,7 +11,7 @@
 //!
 //! The [poll](RegisteredClient::poll()) function can be used to poll the server
 //! once successfully registered. If there are new logs, they will be
-//! returned as a vec of [LogEntry] (see the LogEntry page for more
+//! returned as a vec of [LogEntry](crate::interaction_log::LogEntry) (see the LogEntry page for more
 //! details).
 //!
 //! ```
