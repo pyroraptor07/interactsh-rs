@@ -6,6 +6,8 @@ authors = ["Matt George <pyroraptor07@gmail.com>"]
 license = "MIT OR Apache-2.0"
 description = "A Rust client library for working with Interact.sh servers"
 readme = "README.md"
+repository = "https://github.com/pyroraptor07/interactsh-rs"
+keywords = ["interactsh", "oob-interactions"]
 
 
 [features]
