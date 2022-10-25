@@ -7,7 +7,7 @@
 
 A Rust client library for getting interaction logs from [Interactsh](https://github.com/projectdiscovery/interactsh) servers. See a basic example below; check out the [examples](https://github.com/pyroraptor07/interactsh-rs/tree/main/examples) or the client module in the [API docs](https://docs.rs/interactsh-rs/latest/interactsh_rs/client/index.html) for more detailed use.
 
-### Basic Use
+## Basic Use Example
 ```rust
 use std::time::Duration;
 use std::thread;
@@ -43,3 +43,7 @@ async fn run_client() {
     client.deregister().await.unwrap();
 }
 ```
+
+## Planned future features
+- Proxy handling
+- Logging
