@@ -8,13 +8,13 @@ publish = false
 # Interactsh-rs
 # This uses the Rust Crypto crates for cryptography and Rustls for TLS
 # These are the same as the default features
-interactsh-rs = { path = "../..", default-features = false, features = ['rustcrypto', 'reqwest-rustls-tls', 'async-compat'] }
+interactsh-rs = { path = "../..", default-features = false, features = ['rustcrypto', 'rustls-tls', 'async-compat'] }
 
 # To use OpenSSL instead:
-# interactsh-rs = { path = "../..", default-features = false, features = ['openssl', 'reqwest-native-tls', 'async-compat'] }
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl', 'native-tls', 'async-compat'] }
 
 # For vendored OpenSSL:
-# interactsh-rs = { path = "../..", default-features = false, features = ['openssl-vendored', 'reqwest-native-tls-vendored', 'async-compat'] }
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl-vendored', 'native-tls-vendored', 'async-compat'] }
 
 # Async runtime
 smol = "1"

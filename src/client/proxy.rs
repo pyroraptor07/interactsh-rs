@@ -7,11 +7,11 @@ use crate::errors::ProxyConvertError;
 pub enum ProxyType {
     Http,
     Https,
-    #[cfg(feature = "reqwest-socks-proxy")]
+    #[cfg(feature = "socks-proxy")]
     SocksV5,
 }
 
-#[cfg(not(feature = "reqwest-socks-proxy"))]
+#[cfg(not(feature = "socks-proxy"))]
 impl Display for ProxyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -21,7 +21,7 @@ impl Display for ProxyType {
     }
 }
 
-#[cfg(feature = "reqwest-socks-proxy")]
+#[cfg(feature = "socks-proxy")]
 impl Display for ProxyType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

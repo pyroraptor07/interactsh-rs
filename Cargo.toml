@@ -11,23 +11,30 @@ keywords = ["interactsh", "oob-interactions"]
 
 
 [features]
-default = ["rustcrypto", "reqwest-rustls-tls", "async-compat"]
+default = ["rustcrypto", "rustls-tls", "async-compat"]
 
 # Crypto features
 openssl = ["dep:openssl"]
 openssl-vendored = ["openssl", "openssl?/vendored"]
 rustcrypto = ["dep:rsa", "dep:aes", "dep:cfb-mode", "dep:sha2", "dep:digest", "dep:inout"]
 
-# Reqwest features
-reqwest-native-tls = ["reqwest/default-tls"]
-reqwest-native-tls-vendored = ["reqwest-native-tls", "reqwest/native-tls-vendored"]
-reqwest-rustls-tls = ["reqwest/rustls-tls"]
-# reqwest-socks-proxy = ["reqwest/socks"]
+# TLS features (new names)
+native-tls = ["reqwest/default-tls"]
+native-tls-vendored = ["native-tls", "reqwest/native-tls-vendored"]
+rustls-tls = ["reqwest/rustls-tls"]
+
+# TLS features (old names, will be removed in a later version)
+reqwest-native-tls = ["native-tls"]
+reqwest-native-tls-vendored = ["native-tls-vendored"]
+reqwest-rustls-tls = ["rustls-tls"]
 
 # Other features
 async-compat = ["dep:async-compat"]
-# trace = ["dep:tracing"]
 nightly = []
+
+# Planned future features
+# socks-proxy = ["reqwest/socks"]
+# log = ["dep:log"]
 
 
 [dependencies]
@@ -56,7 +63,8 @@ openssl = { version = "0.10.41", optional = true }
 
 # Other optional dependencies
 async-compat = { version = "0.2", optional = true }
-# tracing = { version = "0.1", optional = true }
+# log = { version = "0.4.17", optional = true }
+
 
 [dev-dependencies]
 async-compat = "0.2"

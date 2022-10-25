@@ -55,12 +55,17 @@
 //! ## Feature Flags - TLS
 //! To enable either [Rustls](https://github.com/rustls/rustls) or OS native
 //! TLS, use one of the following feature flags:
-//! - `reqwest-rustls-tls`
-//! - `reqwest-native-tls`
-//! - `reqwest-native-tls-vendored`
+//! - `rustls-tls`
+//! - `native-tls`
+//! - `native-tls-vendored`
 //!
 //! One of these must be enabled as well to use the crate as a client.
-//! `reqwest-rustls-tls` is enabled by default.
+//! `rustls-tls` is enabled by default.
+//!
+//! Note: All 3 TLS feature flags can also be used currently with the "reqwest-"
+//! prefix. These were the original TLS feature flag names used in initial
+//! development, but will be removed in a future release in favor of the shorter
+//! feature names omitting the "reqwest-" prefix.
 //!
 //! ## Feature Flags - Async runtime compatibility
 //! This crate supports the [tokio](https://github.com/tokio-rs/tokio),
@@ -76,13 +81,13 @@
 #[cfg(any(feature = "rustcrypto", feature = "openssl"))]
 pub(crate) mod crypto;
 
-#[cfg(any(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))]
+#[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
 pub mod client;
 pub mod errors;
 pub mod interaction_log;
 
 pub mod prelude {
-    #[cfg(any(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))]
+    #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
     pub use crate::client::*;
     pub use crate::interaction_log::*;
 }
