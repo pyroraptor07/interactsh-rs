@@ -4,6 +4,7 @@
 [![Crates.io](https://img.shields.io/crates/v/interactsh-rs.svg)](https://crates.io/crates/interactsh-rs)
 [![License](https://img.shields.io/crates/l/interactsh-rs.svg)](https://github.com/pyroraptor07/interactsh-rs)
 [![Downloads](https://img.shields.io/crates/d/interactsh-rs.svg)](https://crates.io/crates/interactsh-rs)
+[![CI Tests](https://github.com/pyroraptor07/interactsh-rs/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/pyroraptor07/interactsh-rs/actions/workflows/main.yml)
 
 A Rust client library for getting interaction logs from [Interactsh](https://github.com/projectdiscovery/interactsh) servers. See a basic example below; check out the [examples](https://github.com/pyroraptor07/interactsh-rs/tree/main/examples) or the client module in the [API docs](https://docs.rs/interactsh-rs/latest/interactsh_rs/client/index.html) for more detailed use.
 
