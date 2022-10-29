@@ -1,6 +1,6 @@
 [package]
 name = "interactsh-rs"
-version = "0.1.0-RC1"
+version = "0.1.0-RC2"
 edition = "2021"
 authors = ["Matt George <pyroraptor07@gmail.com>"]
 license = "MIT OR Apache-2.0"
