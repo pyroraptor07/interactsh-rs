@@ -117,9 +117,6 @@ jobs:
       - name: "Run HTTP test"
         run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
 
-      - name: "Build with release profile"
-        run: cargo build --release --no-default-features --features ${{ matrix.features }}
-
   os_compat_win-msvc:
     needs: test_suite
     strategy:
@@ -135,9 +132,6 @@ jobs:
           
       - name: "Run HTTP test"
         run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-
-      - name: "Build with release profile"
-        run: cargo build --release --no-default-features --features ${{ matrix.features }}
 
   os_compat_win_gnu:
     needs: test_suite
@@ -157,9 +151,6 @@ jobs:
           
       - name: "Run HTTP test"
         run: cargo +stable-gnu test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-
-      - name: "Build with release profile"
-        run: cargo +stable-gnu build --release --no-default-features --features ${{ matrix.features }}
 
   os_compat_win-msvc_openssl:
     needs: test_suite
@@ -181,9 +172,6 @@ jobs:
           
       - name: "Run HTTP test"
         run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-
-      - name: "Build with release profile"
-        run: cargo build --release --no-default-features --features ${{ matrix.features }}
 
   # Commenting this out for now; getting GNU and OpenSSL set up properly on Windows will take some more work
   # os_compat_win_gnu_openssl:
