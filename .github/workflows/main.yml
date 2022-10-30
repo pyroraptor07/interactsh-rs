@@ -31,17 +31,11 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
         
-      - name: "Cargo Check"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: check
-          args: --no-default-features --features ${{ matrix.features }}
+      - name: "Check for compiler errors"
+        run: cargo check --no-default-features --features ${{ matrix.features }}
           
-      - name: "Linting"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: clippy
-          args: --no-default-features --features ${{ matrix.features }} -- -D warnings
+      - name: "Run linter"
+        run: cargo clippy --no-default-features --features ${{ matrix.features }} -- -D warnings
 
   formatting_check:
     needs: code_quality_check
@@ -50,18 +44,11 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
 
-      - name: "Set Nightly Rust Toolchain"
-        uses: "actions-rs/toolchain@v1"
-        with:
-          toolchain: nightly
-          override: true
-          components: rustfmt
+      - name: "Install the nightly Rust toolchain"
+        run: rustup toolchain install -c rustfmt nightly
 
-      - name: "Formatting Check"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: fmt
-          args: --check
+      - name: "Check formatting"
+        run: cargo +nightly fmt --check
 
   dependancy_audit:
     needs: formatting_check
@@ -70,10 +57,8 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
 
-      - name: "Audit"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: audit
+      - name: "Audit dependancies"
+        run: cargo audit
           
   test_suite:
     needs: [code_quality_check, formatting_check]
@@ -108,11 +93,8 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
           
-      - name: "Cargo Test"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: test
-          args: --no-default-features --features ${{ matrix.features }} --no-fail-fast
+      - name: "Run tests"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast
         
   os_compat_nix:
     needs: test_suite
@@ -132,17 +114,11 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
           
-      - name: "Cargo Build"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: build
-          args: --no-default-features --features ${{ matrix.features }}
-          
-      - name: "Cargo Test"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: test
-          args: --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+
+      - name: "Build with release profile"
+        run: cargo build --release --no-default-features --features ${{ matrix.features }}
 
   os_compat_win-msvc:
     needs: test_suite
@@ -157,17 +133,11 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
           
-      - name: "Cargo Build"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: build
-          args: --no-default-features --features ${{ matrix.features }}
-          
-      - name: "Cargo Test"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: test
-          args: --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+
+      - name: "Build with release profile"
+        run: cargo build --release --no-default-features --features ${{ matrix.features }}
 
   os_compat_win_gnu:
     needs: test_suite
@@ -179,26 +149,17 @@ jobs:
           - "rustcrypto,rustls-tls"
     runs-on: windows-latest
     steps:
-      - name: "Set GNU Rust Toolchain"
-        uses: "actions-rs/toolchain@v1"
-        with:
-          toolchain: stable-x86_64-pc-windows-gnu
-          override: true
+      - name: "Install the stable GNU Rust toolchain"
+        run: rustup toolchain install stable-x86_64-pc-windows-gnu
 
       - name: "Checkout"
         uses: actions/checkout@v3
           
-      - name: "Cargo Build"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: build
-          args: --no-default-features --features ${{ matrix.features }}
-          
-      - name: "Cargo Test"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: test
-          args: --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu
+
+      - name: "Build with release profile"
+        run: cargo build --release --no-default-features --features ${{ matrix.features }} --target x86_64-pc-windows-gnu
 
   os_compat_win-msvc_openssl:
     needs: test_suite
@@ -218,17 +179,11 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v3
           
-      - name: "Cargo Build"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: build
-          args: --no-default-features --features ${{ matrix.features }}
-          
-      - name: "Cargo Test"
-        uses: actions-rs/cargo@v1.0.1
-        with:
-          command: test
-          args: --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+
+      - name: "Build with release profile"
+        run: cargo build --release --no-default-features --features ${{ matrix.features }}
 
   # Commenting this out for now; getting GNU and OpenSSL set up properly on Windows will take some more work
   # os_compat_win_gnu_openssl:
@@ -243,26 +198,4 @@ jobs:
   #         - "openssl-vendored,native-tls-vendored"
   #   runs-on: windows-latest
   #   steps:
-  #     - name: "Install OpenSSL"
-  #       run: vcpkg install openssl:x64-windows-static-md
-
-  #     - name: "Set GNU Rust Toolchain"
-  #       uses: "actions-rs/toolchain@v1"
-  #       with:
-  #         toolchain: stable-x86_64-pc-windows-gnu
-  #         override: true
-
-  #     - name: "Checkout"
-  #       uses: actions/checkout@v3
-          
-  #     - name: "Cargo Build"
-  #       uses: actions-rs/cargo@v1.0.1
-  #       with:
-  #         command: build
-  #         args: --no-default-features --features ${{ matrix.features }}
-          
-  #     - name: "Cargo Test"
-  #       uses: actions-rs/cargo@v1.0.1
-  #       with:
-  #         command: test
-  #         args: --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+  #     TODO
