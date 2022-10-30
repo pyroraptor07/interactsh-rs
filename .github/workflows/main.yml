@@ -150,16 +150,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: "Install the stable GNU Rust toolchain"
-        run: rustup toolchain install stable-x86_64-pc-windows-gnu
+        run: rustup toolchain install stable-gnu
 
       - name: "Checkout"
         uses: actions/checkout@v3
           
       - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu
+        run: cargo +stable-gnu test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
 
       - name: "Build with release profile"
-        run: cargo build --release --no-default-features --features ${{ matrix.features }} --target x86_64-pc-windows-gnu
+        run: cargo +stable-gnu build --release --no-default-features --features ${{ matrix.features }}
 
   os_compat_win-msvc_openssl:
     needs: test_suite
