@@ -15,11 +15,11 @@ use tokio::sync::oneshot;
 #[tokio::main]
 async fn main() {
     if let Err(e) = color_eyre::install() {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {:?}", e);
     }
 
     if let Err(e) = run_cli_client().await {
-        eprintln!("Error: {}", e);
+        eprintln!("Error: {:?}", e);
     }
 }
 
