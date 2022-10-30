@@ -75,8 +75,6 @@
 //! (enabled by default).
 
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
-#![cfg_attr(feature = "nightly", feature(error_generic_member_access))]
-#![cfg_attr(feature = "nightly", feature(provide_any))]
 
 #[cfg(any(feature = "rustcrypto", feature = "openssl"))]
 pub(crate) mod crypto;
