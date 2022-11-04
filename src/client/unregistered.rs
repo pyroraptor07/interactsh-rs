@@ -1,9 +1,10 @@
 use secrecy::{ExposeSecret, Secret};
+use snafu::ResultExt;
 
 use super::client_helpers::{self, RegisterData};
+use super::errors::*;
 use super::registered::RegisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::errors::ClientRegistrationError;
 
 /// The client type returned by the [ClientBuilder](crate::client::ClientBuilder)
 /// build function.
@@ -29,7 +30,7 @@ impl UnregisteredClient {
     ///
     /// On a successful result, this returns a [RegisteredClient](crate::client::RegisteredClient)
     /// that can be used to poll the server. If the registration fails, this returns
-    /// a [ClientRegistrationError](crate::errors::ClientRegistrationError), which
+    /// a [ClientRegistrationError](super::errors::ClientRegistrationError), which
     /// contains a clone of this client if another try is needed.
     pub async fn register(
         self,
@@ -39,14 +40,16 @@ impl UnregisteredClient {
             secret_key: self.secret_key.expose_secret().clone(),
             correlation_id: self.correlation_id.clone(),
         };
-        client_helpers::register(
-            &self,
+        client_helpers::register::<UnregisteredClient>(
             &post_data,
             format!("https://{}/register", &self.server),
             &self.reqwest_client,
             self.auth_token.as_ref(),
         )
-        .await?;
+        .await
+        .context(ClientRegistrationSnafu {
+            client: self.clone(),
+        })?;
 
         let new_reg_client = RegisteredClient {
             rsa_key: self.rsa_key,
@@ -63,4 +66,6 @@ impl UnregisteredClient {
     }
 }
 
-impl client_helpers::Client for UnregisteredClient {}
+impl client_helpers::Client for UnregisteredClient {
+    type PostData = RegisterData;
+}

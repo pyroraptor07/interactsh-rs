@@ -3,13 +3,14 @@ use std::time::Duration;
 
 use rand::seq::SliceRandom;
 use secrecy::Secret;
+use snafu::{OptionExt, ResultExt};
 use svix_ksuid::*;
 use uuid::Uuid;
 
+use super::errors::*;
 // use super::proxy::ClientProxy;
 use super::unregistered::UnregisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::errors::ClientBuildError;
 
 /// The default list of servers provided by the Interactsh team
 const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
@@ -155,16 +156,14 @@ impl ClientBuilder {
     /// to turn it into a [RegisteredClient](crate::client::RegisteredClient).
     pub fn build(self) -> Result<UnregisteredClient, ClientBuildError> {
         // Ensure rsa_key and server are set
-        let rsa_key_size = self
-            .rsa_key_size
-            .ok_or(ClientBuildError::MissingRsaKeySize)?;
-        let server = self.server.ok_or(ClientBuildError::MissingServer)?;
+        let rsa_key_size = self.rsa_key_size.context(MissingRsaKeySizeSnafu)?;
+        let server = self.server.context(MissingServerSnafu)?;
 
         // Get the other values needed
-        let rsa_key = RSAPrivKey::generate(rsa_key_size)?;
-        let pubkey = rsa_key.get_pub_key()?;
+        let rsa_key = RSAPrivKey::generate(rsa_key_size).context(RsaGenSnafu)?;
+        let pubkey = rsa_key.get_pub_key().context(PubKeyExtractSnafu)?;
         let secret = Uuid::new_v4().to_string();
-        let encoded_pub_key = pubkey.b64_encode()?;
+        let encoded_pub_key = pubkey.b64_encode().context(PubKeyEncodeSnafu)?;
         let ksuid_a = Ksuid::new(None, None).to_string().to_ascii_lowercase();
         let ksuid_b = Ksuid::new(None, None).to_string().to_ascii_lowercase();
         let mut sub_domain = format!("{}{}", ksuid_a, ksuid_b);
@@ -209,7 +208,9 @@ impl ClientBuilder {
             None => reqwest_client_builder,
         };
 
-        let reqwest_client = reqwest_client_builder.build()?;
+        let reqwest_client = reqwest_client_builder
+            .build()
+            .context(ReqwestBuildFailedSnafu)?;
 
         // Create the UnregisteredClient object
         let unreg_client = UnregisteredClient {

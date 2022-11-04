@@ -2,19 +2,27 @@
 use async_compat::Compat;
 use reqwest::StatusCode;
 use secrecy::{ExposeSecret, Secret};
+use snafu::ResultExt;
 
-use crate::errors::{ClientRegistrationError, ClientRegistrationInnerError};
+use super::errors::{
+    RegistrationError,
+    RegistrationFailureSnafu,
+    RequestSendFailureSnafu,
+    UnauthorizedSnafu,
+};
 
 // Marker traits
 
 /// Marker trait for the types used to
 /// serialize post request body data
-pub(crate) trait PostData {}
+pub trait PostData {}
 
 /// Marker trait for the
 /// [UnregisteredClient](crate::client::unregistered::UnregisteredClient) and
 /// [RegisteredClient](crate::client::registered::RegisteredClient) types
-pub trait Client {}
+pub trait Client {
+    type PostData;
+}
 
 // Serde objects
 
@@ -31,7 +39,7 @@ pub(crate) struct PollResponse {
 /// Serde struct used to serialize the body data
 /// for a deregister post request
 #[derive(serde::Serialize)]
-pub(crate) struct DeregisterData {
+pub struct DeregisterData {
     #[serde(rename(serialize = "correlation-id"))]
     pub(crate) correlation_id: String,
 
@@ -44,7 +52,7 @@ impl PostData for DeregisterData {}
 /// Serde struct used to serialize the body data
 /// for a register post request
 #[derive(serde::Serialize)]
-pub(crate) struct RegisterData {
+pub struct RegisterData {
     #[serde(rename(serialize = "public-key"))]
     pub(crate) public_key: String,
 
@@ -58,13 +66,16 @@ pub(crate) struct RegisterData {
 impl PostData for RegisterData {}
 
 /// Sends a post request to register or deregister a [Client]
-pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
-    client: &T,
-    post_data: &D,
+pub(crate) async fn register<T>(
+    post_data: &T::PostData,
     register_url: String,
     reqwest_client: &reqwest::Client,
     auth_token: Option<&Secret<String>>,
-) -> Result<(), ClientRegistrationError<T>> {
+) -> Result<(), RegistrationError>
+where
+    T: Client + Clone,
+    T::PostData: serde::Serialize,
+{
     let mut post_request = reqwest_client.post(register_url);
 
     post_request = match auth_token {
@@ -84,18 +95,14 @@ pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
         }
     }
 
-    let register_response = post_request_future.await.map_err(|e| {
-        let inner_error = ClientRegistrationInnerError::from(e);
-        ClientRegistrationError::new(client.clone(), inner_error)
-    })?;
+    let register_response = post_request_future.await.context(RequestSendFailureSnafu)?;
 
     match register_response.status() {
         StatusCode::OK => Ok(()),
         StatusCode::UNAUTHORIZED => {
-            let inner_error = ClientRegistrationInnerError::Unauthorized;
-            let error = ClientRegistrationError::new(client.clone(), inner_error);
+            let error_info = UnauthorizedSnafu;
 
-            Err(error)
+            Err(error_info.build())
         }
         status => {
             let server_msg = register_response
@@ -104,14 +111,12 @@ pub(crate) async fn register<T: Client + Clone, D: PostData + serde::Serialize>(
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
 
-            let inner_error = ClientRegistrationInnerError::RegistrationFailure {
+            let error_info = RegistrationFailureSnafu {
                 server_msg,
                 status_code,
             };
 
-            let error = ClientRegistrationError::new(client.clone(), inner_error);
-
-            Err(error)
+            Err(error_info.build())
         }
     }
 }

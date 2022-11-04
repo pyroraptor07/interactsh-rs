@@ -1,11 +1,12 @@
 #[cfg(feature = "async-compat")]
 use async_compat::Compat;
 use secrecy::{ExposeSecret, Secret};
+use snafu::ResultExt;
 
 use super::client_helpers::{self, DeregisterData, PollResponse};
+use super::errors::*;
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
-use crate::errors::{ClientPollError, ClientRegistrationError};
 use crate::interaction_log::LogEntry;
 
 /// The client type returned when an [UnregisteredClient](crate::client::UnregisteredClient)
@@ -32,21 +33,21 @@ impl RegisteredClient {
     /// Deregisters the [RegisteredClient] with the Interactsh server.
     ///
     /// If the deregistration fails, this returns a
-    /// [ClientRegistrationError](crate::errors::ClientRegistrationError),
+    /// [ClientRegistrationError](super::errors::ClientRegistrationError),
     /// which contains a clone of this client if another try is needed.
     pub async fn deregister(self) -> Result<(), ClientRegistrationError<RegisteredClient>> {
         let post_data = DeregisterData {
             correlation_id: self.correlation_id.clone(),
             secret_key: self.secret_key.expose_secret().clone(),
         };
-        client_helpers::register(
-            &self,
+        client_helpers::register::<RegisteredClient>(
             &post_data,
             format!("https://{}/deregister", &self.server),
             &self.reqwest_client,
             self.auth_token.as_ref(),
         )
-        .await?;
+        .await
+        .context(ClientRegistrationSnafu { client: self })?;
 
         Ok(())
     }
@@ -76,7 +77,7 @@ impl RegisteredClient {
             }
         }
 
-        let get_response = get_request_future.await?;
+        let get_response = get_request_future.await.context(PollFailureSnafu)?;
         let status = &get_response.status();
 
         if !status.is_success() {
@@ -85,15 +86,19 @@ impl RegisteredClient {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
-            let error = ClientPollError::PollError {
+            let error_info = PollErrorStatusSnafu {
                 server_msg,
                 status_code,
             };
 
-            return Err(error);
+            return Err(error_info.build());
         }
 
-        let response_body = get_response.json::<PollResponse>().await?;
+        let response_body = get_response
+            .json::<PollResponse>()
+            .await
+            .context(ResponseJsonParseFailedSnafu)?;
+
         let response_body_data = match response_body.data_list {
             Some(data) => {
                 if data.is_empty() {
@@ -104,11 +109,12 @@ impl RegisteredClient {
             }
             None => return Ok(None),
         };
-        let aes_key_decoded = base64::decode(&response_body.aes_key)?;
+        let aes_key_decoded =
+            base64::decode(&response_body.aes_key).context(Base64DecodeFailedSnafu)?;
 
         let mut results = Vec::new();
         for data in response_body_data.iter() {
-            let data_decoded = base64::decode(data)?;
+            let data_decoded = base64::decode(data).context(Base64DecodeFailedSnafu)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
 
             let log_entry = if self.parse_logs {
@@ -128,12 +134,20 @@ impl RegisteredClient {
         aes_key: &[u8],
         encrypted_data: &[u8],
     ) -> Result<String, ClientPollError> {
-        let aes_plain_key = self.rsa_key.decrypt_data(aes_key)?;
-        let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)?;
+        let aes_plain_key = self
+            .rsa_key
+            .decrypt_data(aes_key)
+            .context(AesKeyDecryptFailedSnafu)?;
+
+        let decrypted_data =
+            aes::decrypt_data(&aes_plain_key, encrypted_data).context(DataDecryptFailedSnafu)?;
+
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
 
         Ok(decrypted_string.into())
     }
 }
 
-impl client_helpers::Client for RegisteredClient {}
+impl client_helpers::Client for RegisteredClient {
+    type PostData = DeregisterData;
+}
