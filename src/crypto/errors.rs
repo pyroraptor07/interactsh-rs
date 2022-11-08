@@ -1,4 +1,5 @@
-pub(crate) use errors_to_reexport::{crypto_error, CryptoError};
+pub(crate) use errors_to_reexport::crypto_error;
+pub use errors_to_reexport::CryptoError;
 
 
 mod errors_to_reexport {
