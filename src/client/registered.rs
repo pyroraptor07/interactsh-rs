@@ -91,7 +91,7 @@ impl RegisteredClient {
                 status_code,
             };
 
-            return Err(error_info.build());
+            return error_info.fail();
         }
 
         let response_body = get_response

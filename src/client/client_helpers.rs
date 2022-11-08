@@ -99,11 +99,7 @@ where
 
     match register_response.status() {
         StatusCode::OK => Ok(()),
-        StatusCode::UNAUTHORIZED => {
-            let error_info = UnauthorizedSnafu;
-
-            Err(error_info.build())
-        }
+        StatusCode::UNAUTHORIZED => UnauthorizedSnafu.fail(),
         status => {
             let server_msg = register_response
                 .text()
@@ -111,12 +107,12 @@ where
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
 
-            let error_info = RegistrationFailureSnafu {
+            let error = RegistrationFailureSnafu {
                 server_msg,
                 status_code,
             };
 
-            Err(error_info.build())
+            error.fail()
         }
     }
 }
