@@ -84,7 +84,7 @@ mod errors_to_reexport {
             backtrace: Backtrace,
         },
 
-        #[snafu(display("Requested RSA key bit size is too large (bitsize: {bitsize}"))]
+        #[snafu(display("Requested RSA key bit size is too large (bitsize: {bitsize})"))]
         RsaBitSize {
             bitsize: usize,
             backtrace: Backtrace,
