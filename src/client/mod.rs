@@ -96,7 +96,7 @@ pub(crate) mod client_helpers;
 
 mod builder;
 // pub mod proxy;
-pub mod errors;
+pub(crate) mod errors;
 mod registered;
 mod unregistered;
 
