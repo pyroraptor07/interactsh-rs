@@ -8,8 +8,7 @@ use crate::crypto::errors::CryptoError;
 
 
 // #[derive(Debug, Snafu)]
-// #[snafu(visibility(pub(crate)))]
-// #[snafu(display("Failed to create a proxy for reqwest"))]
+// #[snafu(module, context(suffix(false)), visibility(pub(crate)), display("Failed to create a proxy for reqwest"))]
 // pub struct ProxyConvertError {
 //     source: reqwest::Error,
 //     backtrace: Backtrace,
@@ -18,7 +17,7 @@ use crate::crypto::errors::CryptoError;
 
 /// Inner error type for [ClientRegistrationError]
 #[derive(Debug, Snafu)]
-#[snafu(visibility(pub(crate)))]
+#[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum RegistrationError {
     #[snafu(display("Failed to send the request to the server"))]
     RequestSendFailure {
@@ -39,8 +38,12 @@ pub enum RegistrationError {
 
 /// Error returned during client registration or deregistration.
 #[derive(Debug, Snafu)]
-#[snafu(visibility(pub(crate)))]
-#[snafu(display("{source}"))]
+#[snafu(
+    module,
+    context(suffix(false)),
+    visibility(pub(crate)),
+    display("{source}")
+)]
 pub struct ClientRegistrationError<C: Client + Clone> {
     source: RegistrationError,
     pub client: C,
@@ -49,7 +52,7 @@ pub struct ClientRegistrationError<C: Client + Clone> {
 
 /// The error type used by the [ClientBuilder](crate::client::ClientBuilder)
 #[derive(Debug, Snafu)]
-#[snafu(visibility(pub(crate)))]
+#[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientBuildError {
     // #[snafu(display("Failed to set proxy"))]
     // InvalidProxy { source: ProxyConvertError },
@@ -78,7 +81,7 @@ pub enum ClientBuildError {
 
 /// The error type used by the [RegisteredClient](crate::client::RegisteredClient) when polling the server
 #[derive(Debug, Snafu)]
-#[snafu(visibility(pub(crate)))]
+#[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientPollError {
     #[snafu(display("Client failed to poll the Interactsh server"))]
     PollFailure {

@@ -2,7 +2,7 @@ use secrecy::{ExposeSecret, Secret};
 use snafu::ResultExt;
 
 use super::client_helpers::{self, RegisterData};
-use super::errors::*;
+use super::errors::{client_registration_error, ClientRegistrationError};
 use super::registered::RegisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 
@@ -47,7 +47,7 @@ impl UnregisteredClient {
             self.auth_token.as_ref(),
         )
         .await
-        .context(ClientRegistrationSnafu {
+        .context(client_registration_error::ClientRegistration {
             client: self.clone(),
         })?;
 

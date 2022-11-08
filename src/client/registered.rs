@@ -4,7 +4,12 @@ use secrecy::{ExposeSecret, Secret};
 use snafu::ResultExt;
 
 use super::client_helpers::{self, DeregisterData, PollResponse};
-use super::errors::*;
+use super::errors::{
+    client_poll_error,
+    client_registration_error,
+    ClientPollError,
+    ClientRegistrationError,
+};
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
@@ -47,7 +52,7 @@ impl RegisteredClient {
             self.auth_token.as_ref(),
         )
         .await
-        .context(ClientRegistrationSnafu { client: self })?;
+        .context(client_registration_error::ClientRegistration { client: self })?;
 
         Ok(())
     }
@@ -77,7 +82,9 @@ impl RegisteredClient {
             }
         }
 
-        let get_response = get_request_future.await.context(PollFailureSnafu)?;
+        let get_response = get_request_future
+            .await
+            .context(client_poll_error::PollFailure)?;
         let status = &get_response.status();
 
         if !status.is_success() {
@@ -86,18 +93,18 @@ impl RegisteredClient {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
-            let error_info = PollErrorStatusSnafu {
+            let error = client_poll_error::PollErrorStatus {
                 server_msg,
                 status_code,
             };
 
-            return error_info.fail();
+            return error.fail();
         }
 
         let response_body = get_response
             .json::<PollResponse>()
             .await
-            .context(ResponseJsonParseFailedSnafu)?;
+            .context(client_poll_error::ResponseJsonParseFailed)?;
 
         let response_body_data = match response_body.data_list {
             Some(data) => {
@@ -109,12 +116,13 @@ impl RegisteredClient {
             }
             None => return Ok(None),
         };
-        let aes_key_decoded =
-            base64::decode(&response_body.aes_key).context(Base64DecodeFailedSnafu)?;
+        let aes_key_decoded = base64::decode(&response_body.aes_key)
+            .context(client_poll_error::Base64DecodeFailed)?;
 
         let mut results = Vec::new();
         for data in response_body_data.iter() {
-            let data_decoded = base64::decode(data).context(Base64DecodeFailedSnafu)?;
+            let data_decoded =
+                base64::decode(data).context(client_poll_error::Base64DecodeFailed)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
 
             let log_entry = if self.parse_logs {
@@ -137,10 +145,10 @@ impl RegisteredClient {
         let aes_plain_key = self
             .rsa_key
             .decrypt_data(aes_key)
-            .context(AesKeyDecryptFailedSnafu)?;
+            .context(client_poll_error::AesKeyDecryptFailed)?;
 
-        let decrypted_data =
-            aes::decrypt_data(&aes_plain_key, encrypted_data).context(DataDecryptFailedSnafu)?;
+        let decrypted_data = aes::decrypt_data(&aes_plain_key, encrypted_data)
+            .context(client_poll_error::DataDecryptFailed)?;
 
         let decrypted_string = String::from_utf8_lossy(&decrypted_data);
 

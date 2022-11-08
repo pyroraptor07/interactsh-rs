@@ -4,12 +4,7 @@ use reqwest::StatusCode;
 use secrecy::{ExposeSecret, Secret};
 use snafu::ResultExt;
 
-use super::errors::{
-    RegistrationError,
-    RegistrationFailureSnafu,
-    RequestSendFailureSnafu,
-    UnauthorizedSnafu,
-};
+use super::errors::{registration_error, RegistrationError};
 
 // Marker traits
 
@@ -95,11 +90,13 @@ where
         }
     }
 
-    let register_response = post_request_future.await.context(RequestSendFailureSnafu)?;
+    let register_response = post_request_future
+        .await
+        .context(registration_error::RequestSendFailure)?;
 
     match register_response.status() {
         StatusCode::OK => Ok(()),
-        StatusCode::UNAUTHORIZED => UnauthorizedSnafu.fail(),
+        StatusCode::UNAUTHORIZED => registration_error::Unauthorized.fail(),
         status => {
             let server_msg = register_response
                 .text()
@@ -107,7 +104,7 @@ where
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = status.as_u16();
 
-            let error = RegistrationFailureSnafu {
+            let error = registration_error::RegistrationFailure {
                 server_msg,
                 status_code,
             };
