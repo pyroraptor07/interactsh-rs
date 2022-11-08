@@ -88,7 +88,7 @@ pub mod client;
     any(feature = "rustls-tls", feature = "native-tls"),
     any(feature = "rustcrypto", feature = "openssl")
 ))]
-pub mod error;
+pub mod errors;
 pub mod interaction_log;
 
 pub mod prelude {
@@ -101,7 +101,7 @@ pub mod prelude {
         any(feature = "rustls-tls", feature = "native-tls"),
         any(feature = "rustcrypto", feature = "openssl")
     ))]
-    pub use crate::error::*;
+    pub use crate::errors::*;
     pub use crate::interaction_log::*;
 }
 

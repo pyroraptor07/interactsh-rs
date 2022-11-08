@@ -24,6 +24,7 @@ mod errors_to_reexport {
     }
 
 
+    /// Errors returned for cryptography operations
     #[cfg(feature = "rustcrypto")]
     #[derive(Debug, Snafu)]
     #[snafu(module(rustcrypto_error), context(suffix(false)), visibility(pub))]
@@ -54,6 +55,7 @@ mod errors_to_reexport {
     }
 
 
+    /// Errors returned for cryptography operations
     #[cfg(feature = "openssl")]
     #[derive(Debug, Snafu)]
     #[snafu(module, context(suffix(false)), visibility(pub))]

@@ -36,21 +36,24 @@ pub enum RegistrationError {
     },
 }
 
-/// Error returned during client registration or deregistration.
+/// Error returned during client registration or deregistration
+///
+/// This is a wrapper error. See [RegistrationError] for the inner error types.
 #[derive(Debug, Snafu)]
 #[snafu(
     module,
     context(suffix(false)),
     visibility(pub(crate)),
-    display("{source}")
+    display("{error}")
 )]
 pub struct ClientRegistrationError<C: Client + Clone> {
-    source: RegistrationError,
+    #[snafu(source)]
+    pub error: RegistrationError,
     pub client: C,
 }
 
 
-/// The error type used by the [ClientBuilder](crate::client::ClientBuilder)
+/// Errors returned by the [ClientBuilder](crate::client::ClientBuilder)
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientBuildError {
@@ -79,7 +82,7 @@ pub enum ClientBuildError {
 }
 
 
-/// The error type used by the [RegisteredClient](crate::client::RegisteredClient) when polling the server
+/// Errors returned by the [RegisteredClient](crate::client::RegisteredClient) when polling the server
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientPollError {
