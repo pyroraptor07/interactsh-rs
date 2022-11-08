@@ -1,20 +1,32 @@
-cfg_if::cfg_if! {
-    if #[cfg(feature = "rustcrypto")] {
-        pub use rustcrypto_errors::*;
-    } else if #[cfg(feature = "openssl")] {
-        pub use openssl_errors::*;
-    }
-}
+pub(crate) use errors_to_reexport::{crypto_error, CryptoError};
 
 
-#[cfg(feature = "rustcrypto")]
-pub mod rustcrypto_errors {
+mod errors_to_reexport {
     use snafu::prelude::*;
     use snafu::Backtrace;
 
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "rustcrypto")] {
+            pub use RustCryptoError as CryptoError;
+        } else if #[cfg(feature = "openssl")] {
+            pub use OpensslError as CryptoError;
+        }
+    }
+
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "rustcrypto")] {
+            pub use rustcrypto_error as crypto_error;
+        } else if #[cfg(feature = "openssl")] {
+            pub use openssl_error as crypto_error;
+        }
+    }
+
+
+    #[cfg(feature = "rustcrypto")]
     #[derive(Debug, Snafu)]
-    #[snafu(visibility(pub(crate)))]
-    pub enum CryptoError {
+    #[snafu(module(rustcrypto_error), context(suffix(false)), visibility(pub))]
+    pub enum RustCryptoError {
         #[snafu(display("Failed to decode the data using base 64 encoding"))]
         Base64DecodeAes {
             source: base64::DecodeError,
@@ -39,17 +51,12 @@ pub mod rustcrypto_errors {
             backtrace: Backtrace,
         },
     }
-}
 
 
-#[cfg(feature = "openssl")]
-pub mod openssl_errors {
-    use snafu::prelude::*;
-    use snafu::Backtrace;
-
+    #[cfg(feature = "openssl")]
     #[derive(Debug, Snafu)]
-    #[snafu(visibility(pub(crate)))]
-    pub enum CryptoError {
+    #[snafu(module, context(suffix(false)), visibility(pub))]
+    pub enum OpensslError {
         #[snafu(display("Unable to decrypt data with provided AES key"))]
         AesDecrypt {
             source: openssl::error::ErrorStack,

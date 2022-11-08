@@ -1,9 +1,9 @@
 //! Defines the functions necessary for decrypting AES-encrypted data returned by the Interactsh servers.
 
-use super::errors::*;
+use super::errors::CryptoError;
 
 /// Decrypt the provided data using the provided plain-text AES key
-pub fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+pub(crate) fn decrypt_data(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     cfg_if::cfg_if! {
         if #[cfg(feature = "rustcrypto")] {
             rustcrypto_decrypt(aes_key, encrypted_data)
@@ -35,12 +35,14 @@ fn rustcrypto_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, 
 fn openssl_decrypt(aes_key: &[u8], encrypted_data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     use snafu::ResultExt;
 
+    use super::errors::crypto_error;
+
     let iv = &encrypted_data[0..16];
     let cipher = openssl::symm::Cipher::aes_256_cfb128();
     let sliced_encrypted_data = &encrypted_data[16..];
 
     let decrypted_data = openssl::symm::decrypt(cipher, aes_key, Some(iv), sliced_encrypted_data)
-        .context(AesDecryptSnafu)?;
+        .context(crypto_error::AesDecrypt)?;
 
     Ok(decrypted_data)
 }

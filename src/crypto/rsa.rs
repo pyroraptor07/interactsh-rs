@@ -5,7 +5,7 @@ use openssl::pkey::{PKey, Private, Public};
 #[cfg(feature = "rustcrypto")]
 use rsa::{RsaPrivateKey, RsaPublicKey};
 
-use super::errors::*;
+use super::errors::{crypto_error, CryptoError};
 
 
 /// Wrapper struct for the RSA public key
@@ -18,7 +18,7 @@ pub struct RSAPubKey {
 
 impl RSAPubKey {
     /// Encodes the public key as a base 64 encoded string
-    pub fn b64_encode(&self) -> Result<String, CryptoError> {
+    pub(crate) fn b64_encode(&self) -> Result<String, CryptoError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::encode_public_key(&self.rustcrypto_pubkey)
@@ -49,7 +49,7 @@ impl RSAPrivKey {
     ///
     /// Note: when using the "rustcrypto" feature in the debug build profile,
     /// this function can take some time (depending on the number of bits).
-    pub fn generate(num_bits: usize) -> Result<Self, CryptoError> {
+    pub(crate) fn generate(num_bits: usize) -> Result<Self, CryptoError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::get_rsa(num_bits)
@@ -60,7 +60,7 @@ impl RSAPrivKey {
     }
 
     /// Extracts the public key from the generated private key
-    pub fn get_pub_key(&self) -> Result<RSAPubKey, CryptoError> {
+    pub(crate) fn get_pub_key(&self) -> Result<RSAPubKey, CryptoError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::get_public_key(&self.rustcrypto_privkey)
@@ -71,7 +71,7 @@ impl RSAPrivKey {
     }
 
     /// Decrypts the provided data using the provided SHA2 hash algorithm
-    pub fn decrypt_data(&self, encrypted_data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    pub(crate) fn decrypt_data(&self, encrypted_data: &[u8]) -> Result<Vec<u8>, CryptoError> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "rustcrypto")] {
                 rustcrypto_fns::decrypt_data(
@@ -104,7 +104,7 @@ mod rustcrypto_fns {
     /// Generates a new RSA private key with the provided number of bits
     pub(super) fn get_rsa(num_bits: usize) -> Result<RSAPrivKey, CryptoError> {
         let rustcrypto_privkey =
-            RsaPrivateKey::new(&mut thread_rng(), num_bits).context(RsaGenSnafu)?;
+            RsaPrivateKey::new(&mut thread_rng(), num_bits).context(crypto_error::RsaGen)?;
         let priv_key = RSAPrivKey { rustcrypto_privkey };
 
         Ok(priv_key)
@@ -124,7 +124,7 @@ mod rustcrypto_fns {
 
         let decrypted_bytes = priv_key
             .decrypt(padding, encrypted_data)
-            .context(RsaDecryptSnafu)?;
+            .context(crypto_error::RsaDecrypt)?;
 
         Ok(decrypted_bytes)
     }
@@ -142,7 +142,7 @@ mod rustcrypto_fns {
     pub(super) fn encode_public_key(pub_key: &RsaPublicKey) -> Result<String, CryptoError> {
         let pub_key_pem = pub_key
             .to_public_key_pem(LineEnding::LF)
-            .context(Base64EncodeRsaPubSnafu)?;
+            .context(crypto_error::Base64EncodeRsaPub)?;
         let pub_key_b64 = base64::encode(pub_key_pem);
 
         Ok(pub_key_b64)
@@ -165,13 +165,13 @@ mod openssl_fns {
     pub(super) fn get_rsa(num_bits: usize) -> Result<RSAPrivKey, CryptoError> {
         ensure!(
             num_bits <= u32::MAX as usize,
-            RsaBitSizeSnafu { bitsize: num_bits }
+            crypto_error::RsaBitSize { bitsize: num_bits }
         );
 
         let num_bits = num_bits as u32;
 
-        let rsa_key = Rsa::generate(num_bits).context(RsaGenSnafu)?;
-        let openssl_privkey = PKey::from_rsa(rsa_key).context(RsaGenSnafu)?;
+        let rsa_key = Rsa::generate(num_bits).context(crypto_error::RsaGen)?;
+        let openssl_privkey = PKey::from_rsa(rsa_key).context(crypto_error::RsaGen)?;
 
         let priv_key = RSAPrivKey { openssl_privkey };
 
@@ -184,26 +184,30 @@ mod openssl_fns {
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
         let hasher = Md::sha256();
-        let mut pkey_ctx = PkeyCtx::new(priv_key).context(RsaDecryptSnafu)?;
-        pkey_ctx.decrypt_init().context(RsaDecryptSnafu)?;
+        let mut pkey_ctx = PkeyCtx::new(priv_key).context(crypto_error::RsaDecrypt)?;
+        pkey_ctx.decrypt_init().context(crypto_error::RsaDecrypt)?;
         pkey_ctx
             .set_rsa_padding(Padding::PKCS1_OAEP)
-            .context(RsaDecryptSnafu)?;
-        pkey_ctx.set_rsa_oaep_md(hasher).context(RsaDecryptSnafu)?;
+            .context(crypto_error::RsaDecrypt)?;
+        pkey_ctx
+            .set_rsa_oaep_md(hasher)
+            .context(crypto_error::RsaDecrypt)?;
 
         let mut decrypted_data = Vec::new();
         let _ = pkey_ctx
             .decrypt_to_vec(encrypted_data, &mut decrypted_data)
-            .context(RsaDecryptSnafu)?;
+            .context(crypto_error::RsaDecrypt)?;
 
         Ok(decrypted_data)
     }
 
     /// Extracts the public key from the provided private key
     pub(super) fn get_public_key(priv_key: &PKeyRef<Private>) -> Result<RSAPubKey, CryptoError> {
-        let pub_key_pem = priv_key.public_key_to_pem().context(RsaGetPubKeySnafu)?;
-        let pub_key = Rsa::public_key_from_pem(&pub_key_pem).context(RsaGetPubKeySnafu)?;
-        let pkey_pub_key = PKey::from_rsa(pub_key).context(RsaGetPubKeySnafu)?;
+        let pub_key_pem = priv_key
+            .public_key_to_pem()
+            .context(crypto_error::RsaGetPubKey)?;
+        let pub_key = Rsa::public_key_from_pem(&pub_key_pem).context(crypto_error::RsaGetPubKey)?;
+        let pkey_pub_key = PKey::from_rsa(pub_key).context(crypto_error::RsaGetPubKey)?;
 
         Ok(RSAPubKey {
             openssl_pubkey: pkey_pub_key,
@@ -214,7 +218,7 @@ mod openssl_fns {
     pub(super) fn encode_public_key(pub_key: &PKeyRef<Public>) -> Result<String, CryptoError> {
         let pub_key_pem = pub_key
             .public_key_to_pem()
-            .context(Base64EncodeRsaPubSnafu)?;
+            .context(crypto_error::Base64EncodeRsaPub)?;
         let pub_key_b64 = base64::encode(pub_key_pem);
 
         Ok(pub_key_b64)
