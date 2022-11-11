@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] 2022-11-09
+No library changes, just bumping from release candidate to a full release.
+
 ## [0.1.0-RC2] 2022-10-29
 ### Changed
 - Removed the "reqwest-" prefix from the TLS feature flags. The old TLS
