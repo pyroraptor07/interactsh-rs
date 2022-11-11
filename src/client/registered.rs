@@ -1,15 +1,14 @@
-#[cfg(feature = "async-compat")]
-use async_compat::Compat;
 use secrecy::{ExposeSecret, Secret};
+use smallvec::SmallVec;
 use snafu::ResultExt;
 
-use super::client_helpers::{self, DeregisterData, PollResponse};
 use super::errors::{
     client_poll_error,
     client_registration_error,
     ClientPollError,
     ClientRegistrationError,
 };
+use super::http_utils::{self, Client, DeregisterData, HttpRequest, PollResponse};
 use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
@@ -45,14 +44,10 @@ impl RegisteredClient {
             correlation_id: self.correlation_id.clone(),
             secret_key: self.secret_key.expose_secret().clone(),
         };
-        client_helpers::register::<RegisteredClient>(
-            &post_data,
-            format!("https://{}/deregister", &self.server),
-            &self.reqwest_client,
-            self.auth_token.as_ref(),
-        )
-        .await
-        .context(client_registration_error::ClientRegistration { client: self })?;
+
+        self.do_registration_request(post_data)
+            .await
+            .context(client_registration_error::ClientRegistration { client: self })?;
 
         Ok(())
     }
@@ -60,31 +55,21 @@ impl RegisteredClient {
     /// Polls the Interactsh server for any new logs.
     pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, ClientPollError> {
         let poll_url = format!("https://{}/poll", self.server);
-        let req_query_params = &[
-            ("id", &self.correlation_id),
-            ("secret", self.secret_key.expose_secret()),
-        ];
 
-        let mut get_request = self.reqwest_client.get(poll_url).query(req_query_params);
+        let mut query_params = SmallVec::<[(String, String); 2]>::new();
+        query_params.push(("id".into(), self.correlation_id.clone()));
+        query_params.push(("secret".into(), self.secret_key.expose_secret().clone()));
 
-        get_request = match &self.auth_token {
-            Some(token) => get_request.header("Authorization", token.expose_secret()),
-            None => get_request,
-        };
+        let request_info = HttpRequest::new_get_request(poll_url, query_params);
 
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "async-compat")] {
-                let get_request_future = Compat::new(async {
-                    get_request.send().await
-                });
-            } else {
-                let get_request_future = get_request.send();
-            }
-        }
+        let get_response = http_utils::make_http_request(
+            &self.reqwest_client,
+            self.auth_token.as_ref(),
+            request_info,
+        )
+        .await
+        .context(client_poll_error::PollFailure)?;
 
-        let get_response = get_request_future
-            .await
-            .context(client_poll_error::PollFailure)?;
         let status = &get_response.status();
 
         if !status.is_success() {
@@ -156,6 +141,16 @@ impl RegisteredClient {
     }
 }
 
-impl client_helpers::Client for RegisteredClient {
-    type PostData = DeregisterData;
+impl Client for RegisteredClient {
+    fn get_registration_url(&self) -> String {
+        format!("https://{}/deregister", &self.server)
+    }
+
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.reqwest_client
+    }
+
+    fn get_auth_token(&self) -> Option<&Secret<String>> {
+        self.auth_token.as_ref()
+    }
 }

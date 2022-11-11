@@ -92,7 +92,7 @@
 //! # }
 //! ```
 
-pub(crate) mod client_helpers;
+pub(crate) mod http_utils;
 
 mod builder;
 // pub mod proxy;

@@ -1,8 +1,8 @@
 use secrecy::{ExposeSecret, Secret};
 use snafu::ResultExt;
 
-use super::client_helpers::{self, RegisterData};
 use super::errors::{client_registration_error, ClientRegistrationError};
+use super::http_utils::{Client, RegisterData};
 use super::registered::RegisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 
@@ -40,16 +40,12 @@ impl UnregisteredClient {
             secret_key: self.secret_key.expose_secret().clone(),
             correlation_id: self.correlation_id.clone(),
         };
-        client_helpers::register::<UnregisteredClient>(
-            &post_data,
-            format!("https://{}/register", &self.server),
-            &self.reqwest_client,
-            self.auth_token.as_ref(),
-        )
-        .await
-        .context(client_registration_error::ClientRegistration {
-            client: self.clone(),
-        })?;
+
+        self.do_registration_request(post_data).await.context(
+            client_registration_error::ClientRegistration {
+                client: self.clone(),
+            },
+        )?;
 
         let new_reg_client = RegisteredClient {
             rsa_key: self.rsa_key,
@@ -66,6 +62,16 @@ impl UnregisteredClient {
     }
 }
 
-impl client_helpers::Client for UnregisteredClient {
-    type PostData = RegisterData;
+impl Client for UnregisteredClient {
+    fn get_registration_url(&self) -> String {
+        format!("https://{}/register", &self.server)
+    }
+
+    fn get_reqwest_client(&self) -> &reqwest::Client {
+        &self.reqwest_client
+    }
+
+    fn get_auth_token(&self) -> Option<&Secret<String>> {
+        self.auth_token.as_ref()
+    }
 }

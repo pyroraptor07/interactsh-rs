@@ -3,7 +3,7 @@
 use snafu::prelude::*;
 use snafu::Backtrace;
 
-use super::client_helpers::Client;
+use super::http_utils::Client;
 use crate::crypto::errors::CryptoError;
 
 
