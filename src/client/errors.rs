@@ -11,7 +11,6 @@ use crate::crypto::errors::CryptoError;
 // #[snafu(module, context(suffix(false)), visibility(pub(crate)), display("Failed to create a proxy for reqwest"))]
 // pub struct ProxyConvertError {
 //     source: reqwest::Error,
-//     backtrace: Backtrace,
 // }
 
 
@@ -22,7 +21,7 @@ pub enum RegistrationError {
     #[snafu(display("Failed to send the request to the server"))]
     RequestSendFailure {
         source: reqwest::Error,
-        backtrace: Backtrace,
+        // backtrace: Backtrace,
     },
 
     #[snafu(display("Server returned an Unauthorized status code"))]
@@ -75,10 +74,7 @@ pub enum ClientBuildError {
     PubKeyEncode { source: CryptoError },
 
     #[snafu(display("Failed to build the reqwest client"))]
-    ReqwestBuildFailed {
-        source: reqwest::Error,
-        backtrace: Backtrace,
-    },
+    ReqwestBuildFailed { source: reqwest::Error },
 }
 
 
@@ -87,10 +83,7 @@ pub enum ClientBuildError {
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientPollError {
     #[snafu(display("Client failed to poll the Interactsh server"))]
-    PollFailure {
-        source: reqwest::Error,
-        backtrace: Backtrace,
-    },
+    PollFailure { source: reqwest::Error },
 
     #[snafu(display("Interactsh server returned error status - {status_code}: {server_msg}"))]
     PollErrorStatus {
@@ -100,10 +93,7 @@ pub enum ClientPollError {
     },
 
     #[snafu(display("Server response is not valid JSON"))]
-    ResponseJsonParseFailed {
-        source: reqwest::Error,
-        backtrace: Backtrace,
-    },
+    ResponseJsonParseFailed { source: reqwest::Error },
 
     #[snafu(display("Failed to decrypt the AES key"))]
     AesKeyDecryptFailed { source: CryptoError },
@@ -112,8 +102,5 @@ pub enum ClientPollError {
     DataDecryptFailed { source: CryptoError },
 
     #[snafu(display("Base64 decoding failed"))]
-    Base64DecodeFailed {
-        source: base64::DecodeError,
-        backtrace: Backtrace,
-    },
+    Base64DecodeFailed { source: base64::DecodeError },
 }

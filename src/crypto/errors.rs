@@ -4,6 +4,7 @@ pub use errors_to_reexport::CryptoError;
 
 mod errors_to_reexport {
     use snafu::prelude::*;
+    #[cfg(feature = "openssl")]
     use snafu::Backtrace;
 
 
@@ -30,28 +31,16 @@ mod errors_to_reexport {
     #[snafu(module(rustcrypto_error), context(suffix(false)), visibility(pub))]
     pub enum RustCryptoError {
         #[snafu(display("Failed to decode the data using base 64 encoding"))]
-        Base64DecodeAes {
-            source: base64::DecodeError,
-            backtrace: Backtrace,
-        },
+        Base64DecodeAes { source: base64::DecodeError },
 
         #[snafu(display("Failed to encode the RSA public key as a base 64 string"))]
-        Base64EncodeRsaPub {
-            source: rsa::pkcs8::spki::Error,
-            backtrace: Backtrace,
-        },
+        Base64EncodeRsaPub { source: rsa::pkcs8::spki::Error },
 
         #[snafu(display("Failed to generate the RSA private key"))]
-        RsaGen {
-            source: rsa::errors::Error,
-            backtrace: Backtrace,
-        },
+        RsaGen { source: rsa::errors::Error },
 
         #[snafu(display("Failed to decrypt the data with the provided RSA private key"))]
-        RsaDecrypt {
-            source: rsa::errors::Error,
-            backtrace: Backtrace,
-        },
+        RsaDecrypt { source: rsa::errors::Error },
     }
 
 
@@ -61,28 +50,16 @@ mod errors_to_reexport {
     #[snafu(module, context(suffix(false)), visibility(pub))]
     pub enum OpensslError {
         #[snafu(display("Unable to decrypt data with provided AES key"))]
-        AesDecrypt {
-            source: openssl::error::ErrorStack,
-            backtrace: Backtrace,
-        },
+        AesDecrypt { source: openssl::error::ErrorStack },
 
         #[snafu(display("Failed to decode the data using base 64 encoding"))]
-        Base64DecodeAes {
-            source: base64::DecodeError,
-            backtrace: Backtrace,
-        },
+        Base64DecodeAes { source: base64::DecodeError },
 
         #[snafu(display("Failed to encode the RSA public key as a base 64 string"))]
-        Base64EncodeRsaPub {
-            source: openssl::error::ErrorStack,
-            backtrace: Backtrace,
-        },
+        Base64EncodeRsaPub { source: openssl::error::ErrorStack },
 
         #[snafu(display("Failed to generate the RSA private key"))]
-        RsaGen {
-            source: openssl::error::ErrorStack,
-            backtrace: Backtrace,
-        },
+        RsaGen { source: openssl::error::ErrorStack },
 
         #[snafu(display("Requested RSA key bit size is too large (bitsize: {bitsize})"))]
         RsaBitSize {
@@ -91,15 +68,9 @@ mod errors_to_reexport {
         },
 
         #[snafu(display("Failed to decrypt the data with the provided RSA private key"))]
-        RsaDecrypt {
-            source: openssl::error::ErrorStack,
-            backtrace: Backtrace,
-        },
+        RsaDecrypt { source: openssl::error::ErrorStack },
 
         #[snafu(display("Failed to extract the RSA public key from the RSA private key"))]
-        RsaGetPubKey {
-            source: openssl::error::ErrorStack,
-            backtrace: Backtrace,
-        },
+        RsaGetPubKey { source: openssl::error::ErrorStack },
     }
 }
