@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  server:
+    build:
+      context: .
+    environment:
+      - RUST_TEST_AUTH_TOKEN=${INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN}
+      - RUST_TEST_HOSTNAME=${INTERACTSHRS_TEST_LOCAL_SERVER_FQDN}
+      - RUST_TEST_CERT_SUBJ=${INTERACTSHRS_TEST_CERT_SUBJ}
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
