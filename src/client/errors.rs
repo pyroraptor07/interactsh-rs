@@ -7,13 +7,6 @@ use super::http_utils::Client;
 use crate::crypto::errors::CryptoError;
 
 
-// #[derive(Debug, Snafu)]
-// #[snafu(module, context(suffix(false)), visibility(pub(crate)), display("Failed to create a proxy for reqwest"))]
-// pub struct ProxyConvertError {
-//     source: reqwest::Error,
-// }
-
-
 /// Inner error type for [ClientRegistrationError]
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
@@ -55,8 +48,6 @@ pub struct ClientRegistrationError<C: Client + Clone> {
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum ClientBuildError {
-    // #[snafu(display("Failed to set proxy"))]
-    // InvalidProxy { source: ProxyConvertError },
     #[snafu(display("Builder failed to generate the RSA private key"))]
     RsaGen { source: CryptoError },
 
