@@ -134,7 +134,7 @@ impl HttpRequest<EmptyData> {
 }
 
 impl<P: Serialize + Send> HttpRequest<P> {
-    fn get_request(&self, reqwest_client: &reqwest::Client) -> RequestBuilder {
+    fn create_request_builder(&self, reqwest_client: &reqwest::Client) -> RequestBuilder {
         match self {
             HttpRequest::Get {
                 url, query_params, ..
@@ -149,7 +149,7 @@ pub async fn make_http_request<P: Serialize + Send>(
     auth_token: Option<&Secret<String>>,
     request_info: HttpRequest<P>,
 ) -> Result<Response, reqwest::Error> {
-    let mut http_request = request_info.get_request(reqwest_client);
+    let mut http_request = request_info.create_request_builder(reqwest_client);
 
     http_request = match auth_token {
         Some(token) => http_request.header("Authorization", token.expose_secret()),
