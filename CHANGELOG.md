@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added the ability to set proxies for the client to use. See the docs for
+more info.
+
 ### Changed
 - Replaced thiserror with snafu for error implementions. There are some changes
 to the error enum variants, check the docs if you depend on a specific variant.
