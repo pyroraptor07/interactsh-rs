@@ -21,6 +21,12 @@ async fn client_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[async_std::test]
+async fn client_receives_http_logs_from_proxied_pub_servers() {
+    shared::client_receives_http_logs_from_proxied_pub_servers().await;
+}
+
+#[cfg(feature = "async-compat")]
+#[async_std::test]
 #[ignore] // When run in Github Actions, DNS interaction tests intermittently fail
 async fn client_receives_dns_logs_from_pub_servers() {
     shared::client_receives_dns_logs_from_pub_servers().await;

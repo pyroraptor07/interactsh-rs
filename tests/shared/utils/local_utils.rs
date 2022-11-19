@@ -1,46 +1,9 @@
-use std::net::{IpAddr, Ipv4Addr};
+use std::net::IpAddr;
 use std::time::Duration;
 
 use interactsh_rs::prelude::*;
-use once_cell::sync::Lazy;
 
-
-/// Loads local server data from environment
-static LOCAL_SERVER_DATA: Lazy<LocalServer> = Lazy::new(|| {
-    dotenvy::dotenv().ok();
-
-    let server_fqdn = dotenvy::var("INTERACTSHRS_TEST_LOCAL_SERVER_FQDN")
-        .expect("Environment variable 'INTERACTSHRS_TEST_LOCAL_SERVER_FQDN' is missing");
-
-    let auth_token = dotenvy::var("INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN")
-        .expect("Environment variable 'INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN' is missing");
-
-    let dns_override_addr = dotenvy::var("INTERACTSHRS_TEST_LOCAL_SERVER_DNS_OVERRIDE_ADDR")
-        .ok()
-        .and_then(|env_val| {
-            let override_addr = env_val.parse::<Ipv4Addr>();
-            override_addr.ok()
-        });
-
-    LocalServer {
-        server_fqdn,
-        auth_token,
-        dns_override_addr,
-    }
-});
-
-
-/// Container for the local server data
-#[derive(Clone)]
-pub struct LocalServer {
-    pub server_fqdn: String,
-    pub auth_token: String,
-    pub dns_override_addr: Option<Ipv4Addr>,
-}
-
-pub fn get_local_server() -> LocalServer {
-    Lazy::force(&LOCAL_SERVER_DATA).clone()
-}
+use super::shared_utils::get_local_server;
 
 
 /// Trys to register a client with the local server provided

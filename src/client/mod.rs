@@ -95,7 +95,6 @@
 pub(crate) mod http_utils;
 
 mod builder;
-// pub mod proxy;
 pub(crate) mod errors;
 mod registered;
 mod unregistered;

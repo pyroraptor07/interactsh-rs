@@ -98,12 +98,19 @@ jobs:
         ports:
           - 80:80
           - 443:443
+
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
+
+      - name: "Start proxy server"
+        run: docker-compose --file ./docker/squid/docker-compose.yml up -d
           
       - name: "Run tests"
         run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast
+
+      - name: "Stop proxy server"
+        run: docker-compose --file ./docker/squid/docker-compose.yml down
         
   os_compat_nix:
     needs: test_suite

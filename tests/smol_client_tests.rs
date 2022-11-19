@@ -27,6 +27,14 @@ fn client_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[test]
+fn client_receives_http_logs_from_proxied_pub_servers() {
+    smol::block_on(async {
+        shared::client_receives_http_logs_from_proxied_pub_servers().await;
+    });
+}
+
+#[cfg(feature = "async-compat")]
+#[test]
 #[ignore] // When run in Github Actions, DNS interaction tests intermittently fail
 fn client_receives_dns_logs_from_pub_servers() {
     smol::block_on(async {

@@ -1,6 +1,6 @@
 /target
 /Cargo.lock
-/docker
+/docker/local_server
 /.env
 
 /examples/cli_client_shared/target
