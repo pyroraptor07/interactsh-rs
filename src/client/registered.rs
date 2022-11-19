@@ -29,7 +29,7 @@ pub struct RegisteredClient {
 
 impl RegisteredClient {
     #[deprecated(
-        since = "0.2",
+        since = "0.2.0",
         note = "Renaming for accuracy. Use get_interaction_fqdn() instead."
     )]
     /// Gets the interaction FQDN for the current
