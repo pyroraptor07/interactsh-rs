@@ -21,8 +21,8 @@
 //!     // Registers the client with the server and
 //!     // returns a registered client
 //!     let client = client.register().await.unwrap();
-//!     let interaction_url = client.get_interaction_url();
-//!     println!("INTERACTION URL: {}", interaction_url);
+//!     let interaction_fqdn = client.get_interaction_fqdn();
+//!     println!("INTERACTION URL: https://{}", interaction_fqdn);
 //!
 //!     // Start a poll loop
 //!     loop {

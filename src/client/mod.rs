@@ -43,7 +43,7 @@
 //!         .await
 //!         .expect("Error when registering the client");
 //!
-//!     println!("INTERACTION URL: {}", registered_client.get_interaction_url());
+//!     println!("INTERACTION URL: https://{}", registered_client.get_interaction_fqdn());
 //!
 //!     // Start a poll loop
 //!     loop {

@@ -31,7 +31,7 @@ pub async fn client_polls_pub_servers_successfully() {
 pub async fn client_receives_http_logs_from_pub_servers() {
     let client = public_utils::try_register_to_any_of_pub_servers().await;
 
-    let interaction_fqdn = client.get_interaction_url();
+    let interaction_fqdn = client.get_interaction_fqdn();
     shared_utils::generate_http_interaction(interaction_fqdn, None, None).await;
 
     let log_data = client
@@ -71,7 +71,7 @@ pub async fn client_receives_http_logs_from_pub_servers() {
 pub async fn client_receives_dns_logs_from_pub_servers() {
     let client = public_utils::try_register_to_any_of_pub_servers().await;
 
-    let interaction_fqdn = client.get_interaction_url();
+    let interaction_fqdn = client.get_interaction_fqdn();
     shared_utils::generate_dns_interaction(interaction_fqdn).await;
 
     let log_data = client

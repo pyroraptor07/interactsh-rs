@@ -32,7 +32,7 @@ pub async fn client_receives_http_logs_from_local_server() {
     let client = local_utils::try_register_to_local_server().await;
     let local_server = local_utils::get_local_server();
 
-    let interaction_fqdn = client.get_interaction_url();
+    let interaction_fqdn = client.get_interaction_fqdn();
     shared_utils::generate_http_interaction(
         interaction_fqdn,
         Some(local_server.auth_token),
