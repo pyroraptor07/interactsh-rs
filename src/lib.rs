@@ -75,20 +75,33 @@
 //! (enabled by default).
 
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
-#![cfg_attr(feature = "nightly", feature(error_generic_member_access))]
-#![cfg_attr(feature = "nightly", feature(provide_any))]
 
 #[cfg(any(feature = "rustcrypto", feature = "openssl"))]
 pub(crate) mod crypto;
 
-#[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
+#[cfg(all(
+    any(feature = "rustls-tls", feature = "native-tls"),
+    any(feature = "rustcrypto", feature = "openssl")
+))]
 pub mod client;
+#[cfg(all(
+    any(feature = "rustls-tls", feature = "native-tls"),
+    any(feature = "rustcrypto", feature = "openssl")
+))]
 pub mod errors;
 pub mod interaction_log;
 
 pub mod prelude {
-    #[cfg(any(feature = "rustls-tls", feature = "native-tls"))]
+    #[cfg(all(
+        any(feature = "rustls-tls", feature = "native-tls"),
+        any(feature = "rustcrypto", feature = "openssl")
+    ))]
     pub use crate::client::*;
+    #[cfg(all(
+        any(feature = "rustls-tls", feature = "native-tls"),
+        any(feature = "rustcrypto", feature = "openssl")
+    ))]
+    pub use crate::errors::*;
     pub use crate::interaction_log::*;
 }
 

@@ -34,7 +34,7 @@ async fn run_cli_client() -> Result<()> {
     let client = client.register().await?;
     spinner.finish_with_message("Client registered successfully!");
 
-    print_interaction_url(client.get_interaction_url());
+    print_interaction_url(client.get_interaction_fqdn());
     let shutdown_rx = start_ctrlc_listener()?;
 
     // Poll server

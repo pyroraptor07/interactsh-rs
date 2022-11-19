@@ -50,15 +50,24 @@ jobs:
       - name: "Check formatting"
         run: cargo +nightly fmt --check
 
-  dependancy_audit:
+  dependancy_check:
     needs: formatting_check
+    strategy:
+      fail-fast: false
+      matrix:
+        features:
+          - "rustcrypto,rustls-tls,async-compat"
+          - "openssl,native-tls"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
         uses: actions/checkout@v3
 
-      - name: "Audit dependancies"
-        run: cargo audit
+      - name: "Install cargo-deny tool"
+        run: cargo install cargo-deny
+
+      - name: "Check dependancies"
+        run: cargo deny --no-default-features --features ${{ matrix.features }} check
           
   test_suite:
     needs: [code_quality_check, formatting_check]

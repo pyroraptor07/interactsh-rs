@@ -1,7 +1,5 @@
 use std::fmt::Display;
 
-use crate::errors::ProxyConvertError;
-
 
 #[derive(Debug)]
 pub enum ProxyType {

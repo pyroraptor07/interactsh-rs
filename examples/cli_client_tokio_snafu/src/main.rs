@@ -1,35 +1,37 @@
+mod helpers;
+
 use std::time::Duration;
 
 use clap::Parser;
-use cli_client_shared::{
-    print_interaction_url,
-    start_ctrlc_listener,
-    start_spinner,
-    ClientCli,
-    LogDisplay,
-};
-use color_eyre::Result;
+use helpers::{print_interaction_url, start_ctrlc_listener, start_spinner, ClientCli, LogDisplay};
 use interactsh_rs::prelude::*;
+use snafu::prelude::*;
+use snafu::{ErrorCompat, Whatever};
 use tokio::sync::oneshot;
 
 #[tokio::main]
 async fn main() {
-    if let Err(e) = color_eyre::install() {
-        eprintln!("Error: {:?}", e);
-    }
-
     if let Err(e) = run_cli_client().await {
-        eprintln!("Error: {:?}", e);
+        let error_chain = e.iter_chain();
+
+        eprintln!("\nError chain:");
+        for inner_error in error_chain {
+            eprintln!(" - {}", inner_error);
+        }
+
+        if let Some(bt) = ErrorCompat::backtrace(&e) {
+            eprintln!("\nBacktrace:\n{:?}", bt);
+        }
     }
 }
 
-async fn run_cli_client() -> Result<()> {
+async fn run_cli_client() -> Result<(), Whatever> {
     // Build the client
     let client = build_client()?;
 
     // Register the client
     let spinner = start_spinner("Registering the client...".to_owned());
-    let client = client.register().await?;
+    let client = client.register().await.whatever_context("Register error")?;
     spinner.finish_with_message("Client registered successfully!");
 
     print_interaction_url(client.get_interaction_fqdn());
@@ -42,17 +44,20 @@ async fn run_cli_client() -> Result<()> {
 
     // Deregister the client
     let spinner = start_spinner("Deregistering the client...".to_owned());
-    client.deregister().await?;
+    client
+        .deregister()
+        .await
+        .whatever_context("Deregister error")?;
     spinner.finish_with_message("Client deregistered successfully!");
 
     Ok(())
 }
 
-fn build_client() -> Result<UnregisteredClient> {
+fn build_client() -> Result<UnregisteredClient, Whatever> {
     let builder = get_builder_from_cli();
 
     let spinner = start_spinner("Building the client...".to_owned());
-    let client = builder.build()?;
+    let client = builder.build().whatever_context("Builder error")?;
     spinner.finish_with_message("Client built successfully!");
 
     Ok(client)
@@ -92,16 +97,19 @@ fn get_builder_from_cli() -> ClientBuilder {
     builder
 }
 
-async fn poll_server(client: &RegisteredClient, shutdown_rx: oneshot::Receiver<()>) -> Result<()> {
+async fn poll_server(
+    client: &RegisteredClient,
+    shutdown_rx: oneshot::Receiver<()>,
+) -> Result<(), Whatever> {
     tokio::select! {
         _ = shutdown_rx => return Ok(()),
         result = poll_loop(client) => return result,
     }
 }
 
-async fn poll_loop(client: &RegisteredClient) -> Result<()> {
+async fn poll_loop(client: &RegisteredClient) -> Result<(), Whatever> {
     loop {
-        let logs = match client.poll().await? {
+        let logs = match client.poll().await.whatever_context("Poll error")? {
             Some(logs) => logs,
             None => continue,
         };

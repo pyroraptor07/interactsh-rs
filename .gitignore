@@ -5,10 +5,12 @@
 
 /examples/cli_client_shared/target
 /examples/cli_client_tokio/target
+/examples/cli_client_tokio_snafu/target
 /examples/cli_client_asyncstd/target
 /examples/cli_client_smol/target
 
 /examples/cli_client_shared/Cargo.lock
 /examples/cli_client_tokio/Cargo.lock
+/examples/cli_client_tokio_snafu/Cargo.lock
 /examples/cli_client_asyncstd/Cargo.lock
 /examples/cli_client_smol/Cargo.lock

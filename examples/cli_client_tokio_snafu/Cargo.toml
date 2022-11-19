@@ -1,0 +1,19 @@
+[package]
+name = "cli_client_tokio_snafu"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-channel = { version = "1.7", optional = true }
+clap = { version = "4", features = ["derive"] }
+console = "0.15"
+ctrlc = { version = "3.2.3", optional = true }
+indicatif = { version = "0.17", features = ["tokio"]}
+interactsh-rs = { path = "../..", default-features = false, features = ['rustcrypto', 'rustls-tls'] }
+# interactsh-rs = { path = "../..", default-features = false, features = ['openssl', 'native-tls'] }
+snafu = { version = "0.7.3", features = ["backtraces-impl-backtrace-crate"] }
+time = { version = "0.3.14", features = ["formatting"] }
+tokio = { version = "1", default-features = false, features = ["macros", "rt-multi-thread", "sync", "signal"] }

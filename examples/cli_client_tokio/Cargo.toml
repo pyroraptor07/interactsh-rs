@@ -23,6 +23,7 @@ tokio = { version = "1", default-features = false, features = ["macros", "rt-mul
 color-eyre = "0.6"
 clap = { version = "4", features = ["derive"] }
 cli_client_shared = { path = "../cli_client_shared", features = ["tokio"] }
+# snafu = { version = "0.7.3", features = ["backtraces-impl-backtrace-crate"] }
 
 # For color-eyre
 [profile.dev.package.backtrace]
