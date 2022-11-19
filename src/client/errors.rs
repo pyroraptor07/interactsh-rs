@@ -19,15 +19,14 @@ use crate::crypto::errors::CryptoError;
 #[snafu(module, context(suffix(false)), visibility(pub(crate)))]
 pub enum RegistrationError {
     #[snafu(display("Failed to send the request to the server"))]
-    RequestSendFailure {
-        source: reqwest::Error,
-        // backtrace: Backtrace,
-    },
+    RequestSendFailure { source: reqwest::Error },
 
     #[snafu(display("Server returned an Unauthorized status code"))]
     Unauthorized { backtrace: Backtrace },
 
-    #[snafu(display("Failed to register with the server - {status_code}: {server_msg}"))]
+    #[snafu(display(
+        "Failed to register or deregister with the server - {status_code}: {server_msg}"
+    ))]
     RegistrationFailure {
         server_msg: String,
         status_code: u16,
@@ -43,7 +42,7 @@ pub enum RegistrationError {
     module,
     context(suffix(false)),
     visibility(pub(crate)),
-    display("{error}")
+    display("Failure occured during registration/deregistration")
 )]
 pub struct ClientRegistrationError<C: Client + Clone> {
     #[snafu(source)]

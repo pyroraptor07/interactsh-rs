@@ -28,9 +28,21 @@ pub struct RegisteredClient {
 }
 
 impl RegisteredClient {
-    /// Gets the interaction URL for the current
+    #[deprecated(
+        since = "0.2",
+        note = "Renaming for accuracy. Use get_interaction_fqdn() instead."
+    )]
+    /// Gets the interaction FQDN for the current
     /// registered session
+    ///
+    /// For naming accuracy, this function has been replaced by [get_interaction_fqdn()](RegisteredClient::get_interaction_fqdn()).
     pub fn get_interaction_url(&self) -> String {
+        self.get_interaction_fqdn()
+    }
+
+    /// Gets the interaction FQDN for the current
+    /// registered session
+    pub fn get_interaction_fqdn(&self) -> String {
         format!("{}.{}", self.sub_domain, self.server)
     }
 
