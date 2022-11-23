@@ -89,19 +89,6 @@ jobs:
       INTERACTSHRS_TEST_PROXY_ADDR: "127.0.0.1"
       INTERACTSHRS_TEST_PROXY_PORT: "3128"
       INTERACTSHRS_TEST_CERT_SUBJ: ${{ secrets.CERT_SUBJECT_LINE }}
-    # services:
-    #   local_server:
-    #     image: ghcr.io/pyroraptor07/interactsh-local-test-server:main
-    #     credentials:
-    #       username: ${{ github.actor }}
-    #       password: ${{ secrets.DOCKER_REPO_TOKEN }}
-    #     env:
-    #       RUST_TEST_HOSTNAME: ${{ secrets.LOCAL_SERVER_FQDN }}
-    #       RUST_TEST_AUTH_TOKEN: ${{ secrets.LOCAL_SERVER_TOKEN }}
-    #       RUST_TEST_CERT_SUBJ: ${{ secrets.CERT_SUBJECT_LINE }}
-    #     ports:
-    #       - 80:80
-    #       - 443:443
 
     steps:
       - name: "Checkout"

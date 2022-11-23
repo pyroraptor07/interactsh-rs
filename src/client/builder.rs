@@ -9,7 +9,6 @@ use svix_ksuid::*;
 use uuid::Uuid;
 
 use super::errors::{client_build_error, ClientBuildError};
-// use super::proxy::ClientProxy;
 use super::unregistered::UnregisteredClient;
 use crate::crypto::rsa::RSAPrivKey;
 
@@ -102,9 +101,9 @@ impl ClientBuilder {
         }
     }
 
-    /// Sets an optional proxy URL that the client can use.
+    /// Sets an optional proxy that the client can use.
     ///
-    /// This can be set more than once; each new proxy URL will be added
+    /// This can be set more than once; each new proxy will be added
     /// to a list of proxies that the client will try. Proxies will be
     /// tried in the order added.
     pub fn with_proxy(self, proxy: Proxy) -> Self {

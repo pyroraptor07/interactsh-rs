@@ -44,7 +44,3 @@ async fn run_client() {
     client.deregister().await.unwrap();
 }
 ```
-
-## Planned future features
-- Proxy handling
-- Logging
