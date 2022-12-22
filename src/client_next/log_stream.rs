@@ -10,20 +10,12 @@ use super::{ClientStatus, CommInfo, LogPollResult};
 use crate::crypto::rsa::RSAPrivKey;
 
 
-struct RequestWrapper<'req> {
-    future: BoxFuture<'req, Result<reqwest::Response, reqwest::Error>>,
-}
-
-struct TimerWrapper<'timer> {
-    future: BoxFuture<'timer, ()>,
-}
-
 enum LogStreamStatus<'status> {
     Ready,
     ErrorReturned,
     Closed,
-    WaitingOnServer(RequestWrapper<'status>),
-    WaitingOnTimer(TimerWrapper<'status>),
+    WaitingOnServer(BoxFuture<'status, Result<reqwest::Response, reqwest::Error>>),
+    WaitingOnTimer(BoxFuture<'status, ()>),
 }
 
 pub(super) struct LogStream<'a> {
