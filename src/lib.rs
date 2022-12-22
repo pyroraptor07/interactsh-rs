@@ -97,6 +97,10 @@ pub mod client_next;
 pub mod errors;
 pub mod interaction_log;
 
+// re-exports
+#[cfg(feature = "client-next")]
+pub use futures::stream;
+
 pub mod prelude {
     #[cfg(all(
         any(feature = "rustls-tls", feature = "native-tls"),
