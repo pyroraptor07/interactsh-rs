@@ -11,7 +11,7 @@ keywords = ["interactsh", "oob-interactions"]
 
 
 [features]
-default = ["rustcrypto", "rustls-tls", "async-compat", "client-next"]
+default = ["rustcrypto", "rustls-tls", "async-compat", "client-next", "log-stream"]
 
 # Crypto features
 openssl = ["dep:openssl"]
@@ -30,7 +30,8 @@ reqwest-rustls-tls = ["rustls-tls"]
 
 # Other features
 async-compat = ["dep:async-compat"]
-client-next = ["dep:futures", "dep:parking_lot"]
+client-next = ["dep:parking_lot"]
+log-stream = ["dep:futures-util", "dep:async-stream", "dep:async-io"]
 nightly = []
 
 
@@ -58,7 +59,11 @@ openssl = { version = "0.10.41", optional = true }
 
 # Other optional dependencies
 async-compat = { version = "0.2", optional = true }
-futures = { version = "0.3.25", optional = true }
+async-io = { version = "1.12", optional = true }
+async-stream = { version = "0.3.3", optional = true }
+# futures = { version = "0.3.25", optional = true }
+# futures-core = { version = "0.3.25", optional = true }
+futures-util = { version = "0.3.25", optional = true }
 parking_lot = { version = "0.12.1", optional = true }
 
 

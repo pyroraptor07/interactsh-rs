@@ -77,7 +77,7 @@
 #![cfg_attr(feature = "nightly", feature(doc_auto_cfg))]
 
 #[cfg(any(feature = "rustcrypto", feature = "openssl"))]
-pub(crate) mod crypto;
+mod crypto;
 
 #[cfg(all(
     any(feature = "rustls-tls", feature = "native-tls"),
@@ -94,12 +94,17 @@ pub mod client_next;
     any(feature = "rustls-tls", feature = "native-tls"),
     any(feature = "rustcrypto", feature = "openssl")
 ))]
+mod client_shared;
+#[cfg(all(
+    any(feature = "rustls-tls", feature = "native-tls"),
+    any(feature = "rustcrypto", feature = "openssl")
+))]
 pub mod errors;
 pub mod interaction_log;
 
 // re-exports
-#[cfg(feature = "client-next")]
-pub use futures::stream;
+#[cfg(feature = "log-stream")]
+pub use futures_util::stream;
 
 pub mod prelude {
     #[cfg(all(
