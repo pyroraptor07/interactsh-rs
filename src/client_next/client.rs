@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
+use rand::distributions::{Alphanumeric, DistString};
+use rand::thread_rng;
 use secrecy::Secret;
 use snafu::Whatever;
 
@@ -20,11 +22,64 @@ mod log_stream {
     pub use snafu::ResultExt;
 }
 
+pub(crate) struct CorrelationConfig {
+    pub subdomain_length: usize,
+    pub correlation_id_length: usize,
+}
+
+impl Default for CorrelationConfig {
+    fn default() -> Self {
+        Self {
+            subdomain_length: 33,
+            correlation_id_length: 20,
+        }
+    }
+}
+
+pub(crate) struct CorrelationData {
+    subdomain: String,
+    correlation_id: String,
+}
+
+impl CorrelationData {
+    fn generate_data(config: &CorrelationConfig) -> Self {
+        let max_length = config.subdomain_length.max(config.correlation_id_length);
+        let mut subdomain = Alphanumeric
+            .sample_string(&mut thread_rng(), max_length)
+            .to_ascii_lowercase();
+
+        let mut correlation_id = subdomain.clone();
+
+        subdomain.truncate(config.subdomain_length);
+        correlation_id.truncate(config.correlation_id_length);
+
+        Self {
+            subdomain,
+            correlation_id,
+        }
+    }
+}
+
+impl Default for CorrelationData {
+    fn default() -> Self {
+        Self::generate_data(&CorrelationConfig::default())
+    }
+}
+
+impl From<CorrelationData> for ClientStatus {
+    fn from(data: CorrelationData) -> Self {
+        ClientStatus::Registered {
+            subdomain: data.subdomain,
+            correlation_id: data.correlation_id,
+        }
+    }
+}
+
 #[derive(PartialEq, Eq)]
 pub enum ClientStatus {
     Unregistered,
     Registered {
-        sub_domain: String,
+        subdomain: String,
         correlation_id: String,
     },
 }
@@ -35,10 +90,20 @@ pub struct ServerComm {
     pub(super) secret_key: Secret<String>,
     pub(super) encoded_pub_key: String,
     pub(super) reqwest_client: Arc<reqwest::Client>,
+    pub(super) correlation_config: Option<CorrelationConfig>,
     pub(super) status: ClientStatus,
 }
 
 impl ServerComm {
+    pub(crate) fn get_interaction_fqdn(&self) -> Option<String> {
+        match &self.status {
+            ClientStatus::Unregistered => None,
+            ClientStatus::Registered { subdomain, .. } => {
+                Some(format!("{}.{}", subdomain, self.server_name))
+            }
+        }
+    }
+
     pub(crate) async fn register(&mut self) -> Result<String, Whatever> {
         todo!()
     }
@@ -65,7 +130,8 @@ pub struct InteractshClient {
 
 impl InteractshClient {
     pub fn get_interaction_fqdn(&self) -> Option<String> {
-        todo!()
+        let comm = self.server_comm.read();
+        comm.get_interaction_fqdn()
     }
 
     pub async fn register(&self) -> Result<String, Whatever> {
@@ -83,11 +149,26 @@ impl InteractshClient {
         comm.force_deregister().await;
     }
 
-    pub async fn poll(&self) -> Result<Vec<LogEntry>, Whatever> {
+    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, Whatever> {
         let comm = self.server_comm.read();
-        let response = comm.poll();
+        let response = comm.poll().await.whatever_context("Poll failed");
+        drop(comm);
 
-        todo!()
+        match response {
+            Ok(response) => {
+                match decrypt_logs(response, self.rsa_key.as_ref(), self.parse_logs) {
+                    Ok(new_logs) => {
+                        if new_logs.is_empty() {
+                            Ok(None)
+                        } else {
+                            Ok(Some(new_logs))
+                        }
+                    }
+                    Err(e) => Err(e),
+                }
+            }
+            Err(e) => Err(e),
+        }
     }
 
     #[cfg(feature = "log-stream")]
