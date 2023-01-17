@@ -22,7 +22,7 @@ mod log_stream {
     pub use snafu::ResultExt;
 }
 
-pub(crate) struct CorrelationConfig {
+pub struct CorrelationConfig {
     pub subdomain_length: usize,
     pub correlation_id_length: usize,
 }
