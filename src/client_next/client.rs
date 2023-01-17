@@ -1,16 +1,11 @@
 use std::sync::Arc;
-use std::time::Duration;
 
-#[cfg(feature = "log-stream")]
-use async_io::Timer;
-#[cfg(feature = "log-stream")]
-use async_stream::stream;
-#[cfg(feature = "log-stream")]
-use futures_util::{StreamExt, TryStream};
 use parking_lot::RwLock;
 use secrecy::Secret;
-use snafu::{ResultExt, Whatever};
+use snafu::Whatever;
 
+#[cfg(feature = "log-stream")]
+pub use self::log_stream::*;
 use crate::client_shared::http_utils::PollResponse;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
@@ -81,55 +76,6 @@ impl InteractshClient {
         todo!()
     }
 
-    #[cfg(feature = "log-stream")]
-    pub fn log_stream(
-        &self,
-        poll_period: Duration,
-    ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
-        let server_comm = Arc::clone(&self.server_comm);
-        let rsa_key = Arc::clone(&self.rsa_key);
-        let parse_logs = self.parse_logs;
-
-        stream! {
-            let comm = server_comm.read();
-            if comm.status == ClientStatus::Unregistered {
-                return ();
-            }
-            drop(comm);
-            let mut timer = Timer::interval(poll_period);
-
-            loop {
-                timer.next().await;
-
-                let comm = server_comm.read();
-                if comm.status == ClientStatus::Unregistered {
-                    break;
-                }
-
-                let response = comm.poll().await.whatever_context("Poll failed");
-                drop(comm);
-
-                match response {
-                    Ok(response) => {
-                        match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
-                            Ok(new_logs) => {
-                                if new_logs.is_empty() {
-                                    continue;
-                                }
-
-                                for log in new_logs {
-                                    yield Ok(log);
-                                }
-                            },
-                            Err(e) => yield Err(e),
-                        }
-                    },
-                    Err(e) => yield Err(e),
-                }
-            }
-        }
-    }
-
     pub fn get_interaction_fqdn(&self) -> Option<String> {
         todo!()
     }
@@ -141,4 +87,68 @@ fn decrypt_logs(
     parse_logs: bool,
 ) -> Result<Vec<LogEntry>, Whatever> {
     todo!()
+}
+
+#[cfg(feature = "log-stream")]
+mod log_stream {
+    use std::sync::Arc;
+    use std::time::Duration;
+
+    use async_io::Timer;
+    use async_stream::stream;
+    use futures_util::{StreamExt, TryStream};
+    use snafu::{ResultExt, Whatever};
+
+    use super::{decrypt_logs, ClientStatus, InteractshClient};
+    use crate::interaction_log::LogEntry;
+
+    impl InteractshClient {
+        pub fn log_stream(
+            &self,
+            poll_period: Duration,
+        ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
+            let server_comm = Arc::clone(&self.server_comm);
+            let rsa_key = Arc::clone(&self.rsa_key);
+            let parse_logs = self.parse_logs;
+
+            stream! {
+                let comm = server_comm.read();
+                if comm.status == ClientStatus::Unregistered {
+                    return ();
+                }
+                drop(comm);
+                let mut timer = Timer::interval(poll_period);
+
+                loop {
+                    timer.next().await;
+
+                    let comm = server_comm.read();
+                    if comm.status == ClientStatus::Unregistered {
+                        break;
+                    }
+
+                    let response = comm.poll().await.whatever_context("Poll failed");
+                    drop(comm);
+
+                    match response {
+                        Ok(response) => {
+                            match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
+                                Ok(new_logs) => {
+                                    if new_logs.is_empty() {
+                                        continue;
+                                    }
+
+                                    for log in new_logs {
+                                        yield Ok(log);
+                                    }
+                                },
+                                Err(e) => yield Err(e),
+                            }
+                        },
+                        Err(e) => yield Err(e),
+                    }
+                }
+            }
+        }
+    }
 }
