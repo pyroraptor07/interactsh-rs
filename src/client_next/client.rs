@@ -5,10 +5,20 @@ use secrecy::Secret;
 use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
-pub use self::log_stream::*;
+use self::log_stream::*;
 use crate::client_shared::http_utils::PollResponse;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
+
+#[cfg(feature = "log-stream")]
+mod log_stream {
+    pub use std::time::Duration;
+
+    pub use async_io::Timer;
+    pub use async_stream::stream;
+    pub use futures_util::{StreamExt, TryStream};
+    pub use snafu::ResultExt;
+}
 
 #[derive(PartialEq, Eq)]
 pub enum ClientStatus {
@@ -54,6 +64,10 @@ pub struct InteractshClient {
 }
 
 impl InteractshClient {
+    pub fn get_interaction_fqdn(&self) -> Option<String> {
+        todo!()
+    }
+
     pub async fn register(&self) -> Result<String, Whatever> {
         let mut comm = self.server_comm.write();
         comm.register().await
@@ -76,8 +90,53 @@ impl InteractshClient {
         todo!()
     }
 
-    pub fn get_interaction_fqdn(&self) -> Option<String> {
-        todo!()
+    #[cfg(feature = "log-stream")]
+    pub fn log_stream(
+        &self,
+        poll_period: Duration,
+    ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
+        let server_comm = Arc::clone(&self.server_comm);
+        let rsa_key = Arc::clone(&self.rsa_key);
+        let parse_logs = self.parse_logs;
+
+        stream! {
+            let comm = server_comm.read();
+            if comm.status == ClientStatus::Unregistered {
+                return ();
+            }
+            drop(comm);
+            let mut timer = Timer::interval(poll_period);
+
+            loop {
+                timer.next().await;
+
+                let comm = server_comm.read();
+                if comm.status == ClientStatus::Unregistered {
+                    break;
+                }
+
+                let response = comm.poll().await.whatever_context("Poll failed");
+                drop(comm);
+
+                match response {
+                    Ok(response) => {
+                        match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
+                            Ok(new_logs) => {
+                                if new_logs.is_empty() {
+                                    continue;
+                                }
+
+                                for log in new_logs {
+                                    yield Ok(log);
+                                }
+                            },
+                            Err(e) => yield Err(e),
+                        }
+                    },
+                    Err(e) => yield Err(e),
+                }
+            }
+        }
     }
 }
 
@@ -87,68 +146,4 @@ fn decrypt_logs(
     parse_logs: bool,
 ) -> Result<Vec<LogEntry>, Whatever> {
     todo!()
-}
-
-#[cfg(feature = "log-stream")]
-mod log_stream {
-    use std::sync::Arc;
-    use std::time::Duration;
-
-    use async_io::Timer;
-    use async_stream::stream;
-    use futures_util::{StreamExt, TryStream};
-    use snafu::{ResultExt, Whatever};
-
-    use super::{decrypt_logs, ClientStatus, InteractshClient};
-    use crate::interaction_log::LogEntry;
-
-    impl InteractshClient {
-        pub fn log_stream(
-            &self,
-            poll_period: Duration,
-        ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
-            let server_comm = Arc::clone(&self.server_comm);
-            let rsa_key = Arc::clone(&self.rsa_key);
-            let parse_logs = self.parse_logs;
-
-            stream! {
-                let comm = server_comm.read();
-                if comm.status == ClientStatus::Unregistered {
-                    return ();
-                }
-                drop(comm);
-                let mut timer = Timer::interval(poll_period);
-
-                loop {
-                    timer.next().await;
-
-                    let comm = server_comm.read();
-                    if comm.status == ClientStatus::Unregistered {
-                        break;
-                    }
-
-                    let response = comm.poll().await.whatever_context("Poll failed");
-                    drop(comm);
-
-                    match response {
-                        Ok(response) => {
-                            match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
-                                Ok(new_logs) => {
-                                    if new_logs.is_empty() {
-                                        continue;
-                                    }
-
-                                    for log in new_logs {
-                                        yield Ok(log);
-                                    }
-                                },
-                                Err(e) => yield Err(e),
-                            }
-                        },
-                        Err(e) => yield Err(e),
-                    }
-                }
-            }
-        }
-    }
 }
