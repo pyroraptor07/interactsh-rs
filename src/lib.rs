@@ -105,6 +105,7 @@ pub mod interaction_log;
 // re-exports
 #[cfg(feature = "log-stream")]
 pub use futures_util;
+pub use reqwest::Proxy;
 
 pub mod prelude {
     #[cfg(all(
