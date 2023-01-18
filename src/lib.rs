@@ -105,7 +105,7 @@ pub mod interaction_log;
 // re-exports
 #[cfg(feature = "log-stream")]
 pub use futures_util;
-pub use reqwest::Proxy;
+
 
 pub mod prelude {
     #[cfg(all(
@@ -118,6 +118,8 @@ pub mod prelude {
         any(feature = "rustcrypto", feature = "openssl")
     ))]
     pub use crate::errors::*;
+    #[cfg(feature = "log-stream")]
+    pub use crate::futures_util::{Stream, StreamExt, TryStream, TryStreamExt};
     pub use crate::interaction_log::*;
 }
 

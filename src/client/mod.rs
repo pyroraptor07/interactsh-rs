@@ -101,4 +101,6 @@ mod unregistered;
 
 pub use builder::*;
 pub use registered::*;
+// Re-exports
+pub use reqwest::Proxy;
 pub use unregistered::*;
