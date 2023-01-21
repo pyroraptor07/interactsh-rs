@@ -154,20 +154,18 @@ mod timestamp_unixstr_parse {
 #[cfg(test)]
 mod tests {
     use fake::{faker, Fake};
-    use rand::distributions::Slice;
-    use rand::Rng;
+    use rand::distributions::{Alphanumeric, DistString, Slice};
+    use rand::{thread_rng, Rng};
     use serde_json::{json, Value};
-    use svix_ksuid::*;
     use time::format_description::well_known::Rfc3339;
     use time::OffsetDateTime;
 
     use super::*;
 
     fn get_random_id() -> String {
-        let ksuid_a = Ksuid::new(None, None).to_string().to_ascii_lowercase();
-        let ksuid_b = Ksuid::new(None, None).to_string().to_ascii_lowercase();
-        let mut random_id = format!("{}{}", ksuid_a, ksuid_b);
-        random_id.truncate(33);
+        let random_id = Alphanumeric
+            .sample_string(&mut thread_rng(), 33)
+            .to_ascii_lowercase();
 
         random_id
     }

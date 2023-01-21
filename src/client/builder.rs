@@ -1,11 +1,12 @@
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
+use rand::distributions::{Alphanumeric, DistString};
 use rand::seq::SliceRandom;
+use rand::thread_rng;
 use reqwest::Proxy;
 use secrecy::Secret;
 use snafu::{OptionExt, ResultExt};
-use svix_ksuid::*;
 use uuid::Uuid;
 
 use super::errors::{client_build_error, ClientBuildError};
@@ -148,11 +149,10 @@ impl ClientBuilder {
         let encoded_pub_key = pubkey
             .b64_encode()
             .context(client_build_error::PubKeyEncode)?;
-        let ksuid_a = Ksuid::new(None, None).to_string().to_ascii_lowercase();
-        let ksuid_b = Ksuid::new(None, None).to_string().to_ascii_lowercase();
-        let mut sub_domain = format!("{}{}", ksuid_a, ksuid_b);
-        sub_domain.truncate(33);
 
+        let sub_domain = Alphanumeric
+            .sample_string(&mut thread_rng(), 33)
+            .to_ascii_lowercase();
         let mut correlation_id = sub_domain.clone();
         correlation_id.truncate(20);
 
