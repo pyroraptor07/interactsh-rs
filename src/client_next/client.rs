@@ -24,8 +24,7 @@ mod log_stream {
 
 #[cfg(feature = "log-stream")]
 pub enum LogPollResult {
-    PollFail(Whatever),
-    DecryptFail(Whatever),
+    Error(Whatever),
     NoNewLogs,
     ReceivedNewLog(LogEntry),
 }
@@ -123,10 +122,10 @@ impl InteractshClient {
                                     .for_each(|val| return_vals.push(val));
                             },
                             Ok(None) => return_vals.push(map_fn(LogPollResult::NoNewLogs)),
-                            Err(e) => return_vals.push(map_fn(LogPollResult::DecryptFail(e))),
+                            Err(e) => return_vals.push(map_fn(LogPollResult::Error(e))),
                         }
                     },
-                    Err(e) => return_vals.push(map_fn(LogPollResult::PollFail(e))),
+                    Err(e) => return_vals.push(map_fn(LogPollResult::Error(e))),
                 }
 
                 let return_vals = return_vals.into_iter().filter_map(|val| val);
@@ -149,7 +148,7 @@ impl InteractshClient {
             match res {
                 LogPollResult::NoNewLogs => None,
                 LogPollResult::ReceivedNewLog(log) => Some(Ok(log)),
-                LogPollResult::PollFail(e) | LogPollResult::DecryptFail(e) => Some(Err(e)),
+                LogPollResult::Error(e) => Some(Err(e)),
             }
         })
     }
