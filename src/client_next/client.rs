@@ -31,6 +31,7 @@ pub enum LogPollResult {
 }
 
 
+#[derive(Debug)]
 pub struct InteractshClient {
     pub(crate) rsa_key: Arc<RSAPrivKey>,
     pub(crate) server_comm: Arc<RwLock<ServerComm>>,

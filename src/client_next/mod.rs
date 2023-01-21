@@ -5,6 +5,7 @@ mod client;
 pub use reqwest::Proxy;
 
 // Crate re-exports
+pub use self::builder::ClientBuilder;
 pub use self::client::InteractshClient;
 #[cfg(feature = "log-stream")]
 pub use self::client::LogPollResult;

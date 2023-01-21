@@ -15,7 +15,7 @@ use super::http_utils::{
     RegisterData,
 };
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum ClientStatus {
     Unregistered,
     Registered {
@@ -40,6 +40,7 @@ impl RegistrationAction {
     }
 }
 
+#[derive(Debug)]
 pub struct ServerComm {
     pub(crate) server_name: String,
     pub(crate) auth_token: Option<Secret<String>>,

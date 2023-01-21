@@ -4,6 +4,7 @@ use rand::thread_rng;
 use crate::client_shared::server_comm::ClientStatus;
 
 
+#[derive(Debug)]
 pub struct CorrelationConfig {
     pub subdomain_length: usize,
     pub correlation_id_length: usize,
