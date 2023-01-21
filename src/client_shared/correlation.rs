@@ -1,8 +1,7 @@
 use rand::distributions::{Alphanumeric, DistString};
 use rand::thread_rng;
 
-use crate::client_shared::http_utils::ClientStatus;
-
+use crate::client_shared::server_comm::ClientStatus;
 
 
 pub struct CorrelationConfig {

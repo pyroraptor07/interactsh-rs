@@ -6,8 +6,8 @@ use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
 use self::log_stream::*;
-use crate::client_shared::http_utils::{PollResponse, ServerComm};
-use crate::crypto::aes;
+use crate::client_shared::log_decrypt::decrypt_logs;
+use crate::client_shared::server_comm::{ClientStatus, ServerComm};
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
 
@@ -22,6 +22,7 @@ mod log_stream {
 }
 
 
+#[cfg(feature = "log-stream")]
 pub enum LogPollResult {
     PollFail(Whatever),
     DecryptFail(Whatever),
@@ -84,8 +85,6 @@ impl InteractshClient {
     where
         F: Fn(LogPollResult) -> Option<R>,
     {
-        use crate::client_shared::http_utils::ClientStatus;
-
         let server_comm = Arc::clone(&self.server_comm);
         let rsa_key = Arc::clone(&self.rsa_key);
         let parse_logs = self.parse_logs;
@@ -153,47 +152,4 @@ impl InteractshClient {
             }
         })
     }
-}
-
-fn decrypt_logs(
-    response: PollResponse,
-    rsa_key: &RSAPrivKey,
-    parse_logs: bool,
-) -> Result<Option<Vec<LogEntry>>, Whatever> {
-    // Return None if empty
-    let response_body_data = match response.data_list {
-        Some(data) => {
-            if data.is_empty() {
-                return Ok(None);
-            } else {
-                data
-            }
-        }
-        None => return Ok(None),
-    };
-
-    // Decode and decrypt AES key
-    let aes_key_decoded =
-        base64::decode(&response.aes_key).whatever_context("AES key base 64 decode failed")?;
-    let aes_plain_key = rsa_key
-        .decrypt_data(&aes_key_decoded)
-        .whatever_context("Failed to decrypt aes key")?;
-
-    // Decode and decrypt logs
-    let mut decrypted_logs = Vec::new();
-    for encoded_data in response_body_data.iter() {
-        let encrypted_data =
-            base64::decode(encoded_data).whatever_context("Data base 64 decode failed")?;
-
-        let decrypted_data = aes::decrypt_data(&aes_plain_key, &encrypted_data)
-            .whatever_context("Failed to decrypt data")?;
-
-        let decrypted_string = String::from_utf8_lossy(&decrypted_data);
-
-        let log_entry = LogEntry::new_log_entry(&decrypted_string, parse_logs);
-
-        decrypted_logs.push(log_entry);
-    }
-
-    Ok(Some(decrypted_logs))
 }
