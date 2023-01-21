@@ -1,7 +1,9 @@
 use rand::distributions::{Alphanumeric, DistString};
 use rand::thread_rng;
 
-use super::client::ClientStatus;
+use crate::client_shared::http_utils::ClientStatus;
+
+
 
 pub struct CorrelationConfig {
     pub subdomain_length: usize,
@@ -18,8 +20,8 @@ impl Default for CorrelationConfig {
 }
 
 pub(crate) struct CorrelationData {
-    subdomain: String,
-    correlation_id: String,
+    pub(crate) subdomain: String,
+    pub(crate) correlation_id: String,
 }
 
 impl CorrelationData {

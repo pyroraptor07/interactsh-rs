@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use secrecy::Secret;
+use smallvec::SmallVec;
 use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
 use self::log_stream::*;
-use super::correlation::CorrelationConfig;
-use crate::client_shared::http_utils::PollResponse;
+use crate::client_shared::http_utils::{PollResponse, ServerComm};
+use crate::crypto::aes;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
 
@@ -22,15 +22,6 @@ mod log_stream {
 }
 
 
-#[derive(PartialEq, Eq)]
-pub enum ClientStatus {
-    Unregistered,
-    Registered {
-        subdomain: String,
-        correlation_id: String,
-    },
-}
-
 pub enum LogPollResult {
     PollFail(Whatever),
     DecryptFail(Whatever),
@@ -38,43 +29,6 @@ pub enum LogPollResult {
     ReceivedNewLog(LogEntry),
 }
 
-pub struct ServerComm {
-    pub(crate) server_name: String,
-    pub(crate) auth_token: Option<Secret<String>>,
-    pub(crate) secret_key: Secret<String>,
-    pub(crate) encoded_pub_key: String,
-    pub(crate) reqwest_client: Arc<reqwest::Client>,
-    pub(crate) correlation_config: Option<CorrelationConfig>,
-    pub(crate) status: ClientStatus,
-}
-
-impl ServerComm {
-    pub(crate) fn get_interaction_fqdn(&self) -> Option<String> {
-        match &self.status {
-            ClientStatus::Unregistered => None,
-            ClientStatus::Registered { subdomain, .. } => {
-                Some(format!("{}.{}", subdomain, self.server_name))
-            }
-        }
-    }
-
-    pub(crate) async fn register(&mut self) -> Result<String, Whatever> {
-        todo!()
-    }
-
-    pub(crate) async fn deregister(&mut self) -> Result<(), Whatever> {
-        todo!()
-    }
-
-    pub(crate) async fn force_deregister(&mut self) {
-        self.deregister().await.ok();
-        self.status = ClientStatus::Unregistered;
-    }
-
-    pub(crate) async fn poll(&self) -> Result<PollResponse, reqwest::Error> {
-        todo!()
-    }
-}
 
 pub struct InteractshClient {
     pub(crate) rsa_key: Arc<RSAPrivKey>,
@@ -88,7 +42,7 @@ impl InteractshClient {
         comm.get_interaction_fqdn()
     }
 
-    pub async fn register(&self) -> Result<String, Whatever> {
+    pub async fn register(&self) -> Result<(), Whatever> {
         let mut comm = self.server_comm.write();
         comm.register().await
     }
@@ -106,22 +60,11 @@ impl InteractshClient {
     pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, Whatever> {
         let response = {
             let comm = self.server_comm.read();
-            comm.poll().await.whatever_context("context")
+            comm.poll().await
         };
 
         match response {
-            Ok(response) => {
-                match decrypt_logs(response, self.rsa_key.as_ref(), self.parse_logs) {
-                    Ok(new_logs) => {
-                        if new_logs.is_empty() {
-                            Ok(None)
-                        } else {
-                            Ok(Some(new_logs))
-                        }
-                    }
-                    Err(e) => Err(e),
-                }
-            }
+            Ok(response) => decrypt_logs(response, self.rsa_key.as_ref(), self.parse_logs),
             Err(e) => Err(e),
         }
     }
@@ -141,6 +84,8 @@ impl InteractshClient {
     where
         F: Fn(LogPollResult) -> Option<R>,
     {
+        use crate::client_shared::http_utils::ClientStatus;
+
         let server_comm = Arc::clone(&self.server_comm);
         let rsa_key = Arc::clone(&self.rsa_key);
         let parse_logs = self.parse_logs;
@@ -167,35 +112,27 @@ impl InteractshClient {
                     comm.poll().await.whatever_context("Poll failed")
                 };
 
+                let mut return_vals = SmallVec::<[Option<R>; 1]>::new();
                 match response {
                     Ok(response) => {
                         match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
-                            Ok(new_logs) => {
-                                if new_logs.is_empty() {
-                                    if let Some(return_val) = map_fn(LogPollResult::NoNewLogs) {
-                                        yield return_val;
-                                    }
-                                    continue 'poll_loop;
-                                }
+                            Ok(Some(new_logs)) => {
+                                new_logs
+                                    .into_iter()
+                                    .map(|log| map_fn(LogPollResult::ReceivedNewLog(log)))
+                                    .for_each(|val| return_vals.push(val));
+                            },
+                            Ok(None) => return_vals.push(map_fn(LogPollResult::NoNewLogs)),
+                            Err(e) => return_vals.push(map_fn(LogPollResult::DecryptFail(e))),
+                        }
+                    },
+                    Err(e) => return_vals.push(map_fn(LogPollResult::PollFail(e))),
+                }
 
-                                for log in new_logs {
-                                    if let Some(return_val) = map_fn(LogPollResult::ReceivedNewLog(log)) {
-                                        yield return_val;
-                                    }
-                                }
-                            },
-                            Err(e) => {
-                                if let Some(return_val) = map_fn(LogPollResult::DecryptFail(e)) {
-                                    yield return_val;
-                                }
-                            },
-                        }
-                    },
-                    Err(e) => {
-                        if let Some(return_val) = map_fn(LogPollResult::PollFail(e)) {
-                            yield return_val;
-                        }
-                    },
+                let return_vals = return_vals.into_iter().filter_map(|val| val);
+
+                for val in return_vals {
+                    yield val;
                 }
             }
         }
@@ -222,6 +159,41 @@ fn decrypt_logs(
     response: PollResponse,
     rsa_key: &RSAPrivKey,
     parse_logs: bool,
-) -> Result<Vec<LogEntry>, Whatever> {
-    todo!()
+) -> Result<Option<Vec<LogEntry>>, Whatever> {
+    // Return None if empty
+    let response_body_data = match response.data_list {
+        Some(data) => {
+            if data.is_empty() {
+                return Ok(None);
+            } else {
+                data
+            }
+        }
+        None => return Ok(None),
+    };
+
+    // Decode and decrypt AES key
+    let aes_key_decoded =
+        base64::decode(&response.aes_key).whatever_context("AES key base 64 decode failed")?;
+    let aes_plain_key = rsa_key
+        .decrypt_data(&aes_key_decoded)
+        .whatever_context("Failed to decrypt aes key")?;
+
+    // Decode and decrypt logs
+    let mut decrypted_logs = Vec::new();
+    for encoded_data in response_body_data.iter() {
+        let encrypted_data =
+            base64::decode(encoded_data).whatever_context("Data base 64 decode failed")?;
+
+        let decrypted_data = aes::decrypt_data(&aes_plain_key, &encrypted_data)
+            .whatever_context("Failed to decrypt data")?;
+
+        let decrypted_string = String::from_utf8_lossy(&decrypted_data);
+
+        let log_entry = LogEntry::new_log_entry(&decrypted_string, parse_logs);
+
+        decrypted_logs.push(log_entry);
+    }
+
+    Ok(Some(decrypted_logs))
 }

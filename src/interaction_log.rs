@@ -20,7 +20,14 @@ pub enum LogEntry {
 }
 
 impl LogEntry {
-    #[allow(dead_code)]
+    pub(crate) fn new_log_entry(raw_log_str: &str, try_parse: bool) -> LogEntry {
+        if try_parse {
+            LogEntry::try_parse_log(raw_log_str)
+        } else {
+            LogEntry::return_raw_log(raw_log_str)
+        }
+    }
+
     pub(crate) fn return_raw_log(raw_log_str: &str) -> LogEntry {
         let raw_log = RawLog {
             log_entry: raw_log_str.to_owned(),
@@ -29,7 +36,6 @@ impl LogEntry {
         Self::RawLog(raw_log)
     }
 
-    #[allow(dead_code)]
     pub(crate) fn try_parse_log(raw_log_str: &str) -> LogEntry {
         match serde_json::from_str::<ParsedLogEntry>(raw_log_str) {
             Ok(parsed_log) => Self::ParsedLog(parsed_log),
