@@ -1,5 +1,7 @@
 //! Defines the wrapper structs and functions exposing the RSA key functionality needed
 //! by the interactsh-rs client.
+use base64::engine::general_purpose;
+use base64::Engine as _;
 #[cfg(feature = "openssl")]
 use openssl::pkey::{PKey, Private, Public};
 #[cfg(feature = "rustcrypto")]
@@ -92,9 +94,6 @@ impl RSAPrivKey {
 #[cfg(feature = "rustcrypto")]
 mod rustcrypto_fns {
     //! RustCrypto-specific RSA functions
-
-    use base64::engine::general_purpose;
-    use base64::Engine as _;
     use rand::thread_rng;
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
     use rsa::Oaep;
@@ -215,7 +214,7 @@ mod openssl_fns {
         let pub_key_pem = pub_key
             .public_key_to_pem()
             .context(crypto_error::Base64EncodeRsaPub)?;
-        let pub_key_b64 = base64::encode(pub_key_pem);
+        let pub_key_b64 = general_purpose::STANDARD_NO_PAD.encode(pub_key_pem);
 
         Ok(pub_key_b64)
     }
