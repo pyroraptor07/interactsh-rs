@@ -49,29 +49,6 @@ impl ClientBuilder {
         }
     }
 
-    /// Create a new builder with the default options.
-    ///
-    /// This will create a builder with a 2048 bit RSA key and server randomly picked from the
-    /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server)
-    /// provided and maintained by the Interactsh team. This will also set the timeout
-    /// to 15 seconds, SSL verification to false, and parse_logs to true.
-    pub fn default() -> Self {
-        let server = *DEFAULT_INTERACTSH_SERVERS
-            .choose(&mut rand::thread_rng())
-            .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
-
-        Self {
-            rsa_key_size: Some(2048),
-            server: Some(server.to_string()),
-            auth_token: None,
-            proxies: None,
-            timeout: Some(Duration::from_secs(15)),
-            ssl_verify: false,
-            parse_logs: true,
-            dns_override: None,
-        }
-    }
-
     /// Sets the RSA key size that the builder will generate for the client.
     pub fn with_rsa_key_size(self, num_bits: usize) -> Self {
         Self {
@@ -237,8 +214,27 @@ impl ClientBuilder {
 }
 
 impl Default for ClientBuilder {
+    /// Create a new builder with the default options.
+    ///
+    /// This will create a builder with a 2048 bit RSA key and server randomly picked from the
+    /// [list of default servers](https://github.com/projectdiscovery/interactsh#using-self-hosted-server)
+    /// provided and maintained by the Interactsh team. This will also set the timeout
+    /// to 15 seconds, SSL verification to false, and parse_logs to true.
     fn default() -> Self {
-        Self::default()
+        let server = *DEFAULT_INTERACTSH_SERVERS
+            .choose(&mut rand::thread_rng())
+            .unwrap_or(&"oast.pro"); // if random choice somehow returns None, just use oast.pro
+
+        Self {
+            rsa_key_size: Some(2048),
+            server: Some(server.to_string()),
+            auth_token: None,
+            proxies: None,
+            timeout: Some(Duration::from_secs(15)),
+            ssl_verify: false,
+            parse_logs: true,
+            dns_override: None,
+        }
     }
 }
 

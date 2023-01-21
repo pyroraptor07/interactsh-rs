@@ -115,7 +115,8 @@ mod rustcrypto_fns {
         priv_key: &RsaPrivateKey,
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        let hasher: Box<dyn DynDigest> = Box::new(sha2::Sha256::default());
+        // let hasher: Box<dyn DynDigest> = Box::new(sha2::Sha256::default());
+        let hasher: Box<dyn DynDigest> = Box::<sha2::Sha256>::default();
         let padding = PaddingScheme::OAEP {
             digest: Box::clone(&hasher),
             mgf_digest: hasher,
