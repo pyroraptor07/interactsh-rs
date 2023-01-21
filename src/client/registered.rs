@@ -1,3 +1,5 @@
+use base64::engine::general_purpose;
+use base64::Engine as _;
 use secrecy::{ExposeSecret, Secret};
 use smallvec::SmallVec;
 use snafu::ResultExt;
@@ -113,13 +115,15 @@ impl RegisteredClient {
             }
             None => return Ok(None),
         };
-        let aes_key_decoded = base64::decode(&response_body.aes_key)
+        let aes_key_decoded = general_purpose::STANDARD_NO_PAD
+            .decode(&response_body.aes_key)
             .context(client_poll_error::Base64DecodeFailed)?;
 
         let mut results = Vec::new();
         for data in response_body_data.iter() {
-            let data_decoded =
-                base64::decode(data).context(client_poll_error::Base64DecodeFailed)?;
+            let data_decoded = general_purpose::STANDARD_NO_PAD
+                .decode(data)
+                .context(client_poll_error::Base64DecodeFailed)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
 
             let log_entry = if self.parse_logs {

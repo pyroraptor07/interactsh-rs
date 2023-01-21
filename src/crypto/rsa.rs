@@ -93,10 +93,11 @@ impl RSAPrivKey {
 mod rustcrypto_fns {
     //! RustCrypto-specific RSA functions
 
-    use digest::DynDigest;
+    use base64::engine::general_purpose;
+    use base64::Engine as _;
     use rand::thread_rng;
-    use rsa::padding::PaddingScheme;
     use rsa::pkcs8::{EncodePublicKey, LineEnding};
+    use rsa::Oaep;
     use snafu::ResultExt;
 
     use super::*;
@@ -115,13 +116,7 @@ mod rustcrypto_fns {
         priv_key: &RsaPrivateKey,
         encrypted_data: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        // let hasher: Box<dyn DynDigest> = Box::new(sha2::Sha256::default());
-        let hasher: Box<dyn DynDigest> = Box::<sha2::Sha256>::default();
-        let padding = PaddingScheme::OAEP {
-            digest: Box::clone(&hasher),
-            mgf_digest: hasher,
-            label: None,
-        };
+        let padding = Oaep::new::<sha2::Sha256>();
 
         let decrypted_bytes = priv_key
             .decrypt(padding, encrypted_data)
@@ -144,7 +139,7 @@ mod rustcrypto_fns {
         let pub_key_pem = pub_key
             .to_public_key_pem(LineEnding::LF)
             .context(crypto_error::Base64EncodeRsaPub)?;
-        let pub_key_b64 = base64::encode(pub_key_pem);
+        let pub_key_b64 = general_purpose::STANDARD_NO_PAD.encode(pub_key_pem);
 
         Ok(pub_key_b64)
     }
