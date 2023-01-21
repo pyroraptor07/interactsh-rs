@@ -36,6 +36,7 @@ nightly = []
 
 
 [dependencies]
+async-trait = "0.1.62"
 base64 = "0.21.0"
 cfg-if = "1"
 parking_lot = "0.12.1"
@@ -67,6 +68,7 @@ futures-util = { version = "0.3.25", optional = true }
 
 [dev-dependencies]
 async-compat = "0.2"
+color-eyre = "0.6"
 tokio = { version = "1", default-features = false, features = ["macros", "rt"] }
 async-std = { version = "1", features = ["attributes"] }
 smol = "1"

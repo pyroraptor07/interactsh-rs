@@ -1,3 +1,5 @@
+use base64::engine::general_purpose;
+use base64::Engine as _;
 use snafu::{ResultExt, Whatever};
 
 use super::http_utils::PollResponse;
@@ -23,8 +25,9 @@ pub(crate) fn decrypt_logs(
     };
 
     // Decode and decrypt AES key
-    let aes_key_decoded =
-        base64::decode(&response.aes_key).whatever_context("AES key base 64 decode failed")?;
+    let aes_key_decoded = general_purpose::STANDARD
+        .decode(&response.aes_key)
+        .whatever_context("AES key base 64 decode failed")?;
     let aes_plain_key = rsa_key
         .decrypt_data(&aes_key_decoded)
         .whatever_context("Failed to decrypt aes key")?;
@@ -32,8 +35,9 @@ pub(crate) fn decrypt_logs(
     // Decode and decrypt logs
     let mut decrypted_logs = Vec::new();
     for encoded_data in response_body_data.iter() {
-        let encrypted_data =
-            base64::decode(encoded_data).whatever_context("Data base 64 decode failed")?;
+        let encrypted_data = general_purpose::STANDARD
+            .decode(encoded_data)
+            .whatever_context("Data base 64 decode failed")?;
 
         let decrypted_data = aes::decrypt_data(&aes_plain_key, &encrypted_data)
             .whatever_context("Failed to decrypt data")?;

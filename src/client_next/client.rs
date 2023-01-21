@@ -139,34 +139,6 @@ impl InteractshClient {
 
     /// Convenience wrapper around [log_stream_map_filter()] that ignores empty poll responses
     /// and returns the errors and decrypted LogEntry objects wrapped in a Result type.
-    ///
-    /// # Example
-    ///
-    /* /// ```
-    /// # use interactsh_rs::client_next::*;
-    /// # use std::time::Duration;
-    /// # use interactsh_rs::prelude::{StreamExt, Stream, TryStream, TryStreamExt};
-    /// # smol::block_on( async {
-    /// let client = ClientBuilder::default()
-    ///     .build()
-    ///     .unwrap();
-    ///
-    /// client.register()
-    ///     .await
-    ///     .unwrap();
-    ///
-    /// let mut log_stream = client.log_stream(Duration::from_secs(5));
-    ///
-    /// let log = log_stream.next().await;
-    ///
-    /// if let Some(log) = log {
-    ///     println!("Got a log");
-    /// }
-    ///
-    /// client.force_deregister().await;
-    /// # Ok(())
-    /// # });
-    /// ``` */
     #[cfg(feature = "log-stream")]
     pub fn log_stream(
         &self,
@@ -195,8 +167,17 @@ mod tests {
     // #[test]
     fn log_stream_works() {
         let future = async {
+            color_eyre::install().ok();
+
             let client = ClientBuilder::default().build().unwrap();
-            client.register().await.unwrap();
+            client
+                .register()
+                .await
+                .map_err(|e| {
+                    eprintln!("{:#?}", e);
+                    e
+                })
+                .unwrap();
 
             let interaction_url = format!("https://{}", client.get_interaction_fqdn().unwrap());
             reqwest::get(interaction_url).await.unwrap();
