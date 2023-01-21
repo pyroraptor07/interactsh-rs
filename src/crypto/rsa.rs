@@ -138,7 +138,7 @@ mod rustcrypto_fns {
         let pub_key_pem = pub_key
             .to_public_key_pem(LineEnding::LF)
             .context(crypto_error::Base64EncodeRsaPub)?;
-        let pub_key_b64 = general_purpose::STANDARD_NO_PAD.encode(pub_key_pem);
+        let pub_key_b64 = general_purpose::STANDARD.encode(pub_key_pem);
 
         Ok(pub_key_b64)
     }
@@ -214,7 +214,7 @@ mod openssl_fns {
         let pub_key_pem = pub_key
             .public_key_to_pem()
             .context(crypto_error::Base64EncodeRsaPub)?;
-        let pub_key_b64 = general_purpose::STANDARD_NO_PAD.encode(pub_key_pem);
+        let pub_key_b64 = general_purpose::STANDARD.encode(pub_key_pem);
 
         Ok(pub_key_b64)
     }

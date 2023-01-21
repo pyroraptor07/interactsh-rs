@@ -115,13 +115,13 @@ impl RegisteredClient {
             }
             None => return Ok(None),
         };
-        let aes_key_decoded = general_purpose::STANDARD_NO_PAD
+        let aes_key_decoded = general_purpose::STANDARD
             .decode(&response_body.aes_key)
             .context(client_poll_error::Base64DecodeFailed)?;
 
         let mut results = Vec::new();
         for data in response_body_data.iter() {
-            let data_decoded = general_purpose::STANDARD_NO_PAD
+            let data_decoded = general_purpose::STANDARD
                 .decode(data)
                 .context(client_poll_error::Base64DecodeFailed)?;
             let decrypted_data = self.decrypt_data(&aes_key_decoded, &data_decoded)?;
