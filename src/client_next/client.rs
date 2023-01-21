@@ -1,13 +1,12 @@
 use std::sync::Arc;
 
 use parking_lot::RwLock;
-use rand::distributions::{Alphanumeric, DistString};
-use rand::thread_rng;
 use secrecy::Secret;
 use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
 use self::log_stream::*;
+use super::correlation::CorrelationConfig;
 use crate::client_shared::http_utils::PollResponse;
 use crate::crypto::rsa::RSAPrivKey;
 use crate::interaction_log::LogEntry;
@@ -22,58 +21,6 @@ mod log_stream {
     pub use snafu::ResultExt;
 }
 
-pub struct CorrelationConfig {
-    pub subdomain_length: usize,
-    pub correlation_id_length: usize,
-}
-
-impl Default for CorrelationConfig {
-    fn default() -> Self {
-        Self {
-            subdomain_length: 33,
-            correlation_id_length: 20,
-        }
-    }
-}
-
-pub(crate) struct CorrelationData {
-    subdomain: String,
-    correlation_id: String,
-}
-
-impl CorrelationData {
-    fn generate_data(config: &CorrelationConfig) -> Self {
-        let max_length = config.subdomain_length.max(config.correlation_id_length);
-        let mut subdomain = Alphanumeric
-            .sample_string(&mut thread_rng(), max_length)
-            .to_ascii_lowercase();
-
-        let mut correlation_id = subdomain.clone();
-
-        subdomain.truncate(config.subdomain_length);
-        correlation_id.truncate(config.correlation_id_length);
-
-        Self {
-            subdomain,
-            correlation_id,
-        }
-    }
-}
-
-impl Default for CorrelationData {
-    fn default() -> Self {
-        Self::generate_data(&CorrelationConfig::default())
-    }
-}
-
-impl From<CorrelationData> for ClientStatus {
-    fn from(data: CorrelationData) -> Self {
-        ClientStatus::Registered {
-            subdomain: data.subdomain,
-            correlation_id: data.correlation_id,
-        }
-    }
-}
 
 #[derive(PartialEq, Eq)]
 pub enum ClientStatus {
@@ -92,13 +39,13 @@ pub enum LogPollResult {
 }
 
 pub struct ServerComm {
-    pub(super) server_name: String,
-    pub(super) auth_token: Option<Secret<String>>,
-    pub(super) secret_key: Secret<String>,
-    pub(super) encoded_pub_key: String,
-    pub(super) reqwest_client: Arc<reqwest::Client>,
-    pub(super) correlation_config: Option<CorrelationConfig>,
-    pub(super) status: ClientStatus,
+    pub(crate) server_name: String,
+    pub(crate) auth_token: Option<Secret<String>>,
+    pub(crate) secret_key: Secret<String>,
+    pub(crate) encoded_pub_key: String,
+    pub(crate) reqwest_client: Arc<reqwest::Client>,
+    pub(crate) correlation_config: Option<CorrelationConfig>,
+    pub(crate) status: ClientStatus,
 }
 
 impl ServerComm {
@@ -130,9 +77,9 @@ impl ServerComm {
 }
 
 pub struct InteractshClient {
-    pub(super) rsa_key: Arc<RSAPrivKey>,
-    pub(super) server_comm: Arc<RwLock<ServerComm>>,
-    pub(super) parse_logs: bool,
+    pub(crate) rsa_key: Arc<RSAPrivKey>,
+    pub(crate) server_comm: Arc<RwLock<ServerComm>>,
+    pub(crate) parse_logs: bool,
 }
 
 impl InteractshClient {
