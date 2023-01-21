@@ -18,7 +18,7 @@ mod log_stream {
 
     pub use async_io::Timer;
     pub use async_stream::stream;
-    pub use futures_util::{StreamExt, TryStream};
+    pub use futures_util::{Stream, StreamExt, TryStream};
     pub use snafu::ResultExt;
 }
 
@@ -82,6 +82,13 @@ pub enum ClientStatus {
         subdomain: String,
         correlation_id: String,
     },
+}
+
+pub enum LogPollResult {
+    PollFail(Whatever),
+    DecryptFail(Whatever),
+    NoNewLogs,
+    ReceivedNewLog(LogEntry),
 }
 
 pub struct ServerComm {
@@ -150,9 +157,10 @@ impl InteractshClient {
     }
 
     pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, Whatever> {
-        let comm = self.server_comm.read();
-        let response = comm.poll().await.whatever_context("Poll failed");
-        drop(comm);
+        let response = {
+            let comm = self.server_comm.read();
+            comm.poll().await.whatever_context("context")
+        };
 
         match response {
             Ok(response) => {
@@ -171,53 +179,95 @@ impl InteractshClient {
         }
     }
 
+    /// Returns a [Stream](futures_util::Stream) that will poll the Interactsh server as long
+    /// as the client remains registered, and will run the provided map function on each
+    /// result. For any Some(R) value return from the map function, the stream will yield back
+    /// the contained value. If more than one log is returned from a single poll, the map
+    /// function will run on each log. The provided map function should accept and process
+    /// a [LogPollResult].
     #[cfg(feature = "log-stream")]
-    pub fn log_stream(
+    pub fn log_stream_map_filter<F, R>(
         &self,
         poll_period: Duration,
-    ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
+        map_fn: F,
+    ) -> impl Stream<Item = R>
+    where
+        F: Fn(LogPollResult) -> Option<R>,
+    {
         let server_comm = Arc::clone(&self.server_comm);
         let rsa_key = Arc::clone(&self.rsa_key);
         let parse_logs = self.parse_logs;
 
         stream! {
-            let comm = server_comm.read();
-            if comm.status == ClientStatus::Unregistered {
-                return ();
-            }
-            drop(comm);
-            let mut timer = Timer::interval(poll_period);
-
-            loop {
-                timer.next().await;
-
+            {
                 let comm = server_comm.read();
                 if comm.status == ClientStatus::Unregistered {
-                    break;
+                    return ();
                 }
+            }
 
-                let response = comm.poll().await.whatever_context("Poll failed");
-                drop(comm);
+            let mut timer = Timer::interval(poll_period);
+
+            'poll_loop: loop {
+                timer.next().await;
+
+                let response = {
+                    let comm = server_comm.read();
+                    if comm.status == ClientStatus::Unregistered {
+                        break 'poll_loop;
+                    }
+
+                    comm.poll().await.whatever_context("Poll failed")
+                };
 
                 match response {
                     Ok(response) => {
                         match decrypt_logs(response, rsa_key.as_ref(), parse_logs) {
                             Ok(new_logs) => {
                                 if new_logs.is_empty() {
-                                    continue;
+                                    if let Some(return_val) = map_fn(LogPollResult::NoNewLogs) {
+                                        yield return_val;
+                                    }
+                                    continue 'poll_loop;
                                 }
 
                                 for log in new_logs {
-                                    yield Ok(log);
+                                    if let Some(return_val) = map_fn(LogPollResult::ReceivedNewLog(log)) {
+                                        yield return_val;
+                                    }
                                 }
                             },
-                            Err(e) => yield Err(e),
+                            Err(e) => {
+                                if let Some(return_val) = map_fn(LogPollResult::DecryptFail(e)) {
+                                    yield return_val;
+                                }
+                            },
                         }
                     },
-                    Err(e) => yield Err(e),
+                    Err(e) => {
+                        if let Some(return_val) = map_fn(LogPollResult::PollFail(e)) {
+                            yield return_val;
+                        }
+                    },
                 }
             }
         }
+    }
+
+    /// Convenience wrapper around [log_stream_map_filter()] that ignores empty poll responses
+    /// and returns the errors and decrypted LogEntry objects wrapped in a Result type.
+    #[cfg(feature = "log-stream")]
+    pub fn log_stream(
+        &self,
+        poll_period: Duration,
+    ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
+        self.log_stream_map_filter(poll_period, |res| {
+            match res {
+                LogPollResult::NoNewLogs => None,
+                LogPollResult::ReceivedNewLog(log) => Some(Ok(log)),
+                LogPollResult::PollFail(e) | LogPollResult::DecryptFail(e) => Some(Err(e)),
+            }
+        })
     }
 }
 
