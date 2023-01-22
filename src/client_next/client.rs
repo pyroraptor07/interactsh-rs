@@ -72,7 +72,7 @@ impl InteractshClient {
 
     /// Returns a [Stream](futures_util::Stream) that will poll the Interactsh server as long
     /// as the client remains registered, and will run the provided map function on each
-    /// result. For any Some(R) value return from the map function, the stream will yield back
+    /// result. For any Some(R) value returned from the map function, the stream will yield back
     /// the contained value. If more than one log is returned from a single poll, the map
     /// function will run on each log. The provided map function should accept and process
     /// a [LogPollResult].
@@ -90,13 +90,6 @@ impl InteractshClient {
         let parse_logs = self.parse_logs;
 
         stream! {
-            {
-                let comm = server_comm.read();
-                if comm.status == ClientStatus::Unregistered {
-                    return ();
-                }
-            }
-
             let mut timer = Timer::interval(poll_period);
 
             'poll_loop: loop {
@@ -170,14 +163,7 @@ mod tests {
             color_eyre::install().ok();
 
             let client = ClientBuilder::default().build().unwrap();
-            client
-                .register()
-                .await
-                .map_err(|e| {
-                    eprintln!("{:#?}", e);
-                    e
-                })
-                .unwrap();
+            client.register().await.unwrap();
 
             let interaction_url = format!("https://{}", client.get_interaction_fqdn().unwrap());
             reqwest::get(interaction_url).await.unwrap();
