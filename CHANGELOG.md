@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0]
+This is an intermediate release to bump some dependancy versions and fix a couple of things internally.
+
+**IMPORTANT NOTE: The 0.4 and possibly 0.5 releases are going to be major under the hood changes. The 0.4 release will include some changes to the existing public API.**
+
+### Changed
+- Removed duplicate default() method on ClientBuilder.
+- Bumped base64 crate version to 0.21.
+- Bumped rsa crate version to 0.8.
+- Removed the weird ksuid concatenation in ClientBuilder in favor of simpler random string generation for subdomain and correlation ID.
+
 ## [0.2.1] 2022-11-22
 Readme fix, no library changes
 
