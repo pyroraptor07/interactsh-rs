@@ -1,0 +1,7 @@
+{
+    "rust-analyzer.cargo.features": [
+        "openssl",
+        "client-next",
+        "log-stream"
+    ]
+}

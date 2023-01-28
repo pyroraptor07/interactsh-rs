@@ -11,7 +11,7 @@ keywords = ["interactsh", "oob-interactions"]
 
 
 [features]
-default = ["rustcrypto", "rustls-tls", "async-compat", "client-next", "log-stream"]
+default = ["rustcrypto", "rustls-tls", "async-compat"]
 
 # Crypto features
 openssl = ["dep:openssl"]
