@@ -1,0 +1,127 @@
+name: OS Compatibility Tests
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  linux_and_mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        features: 
+          - "rustcrypto,rustls-tls,async-compat"
+          - "rustcrypto,rustls-tls"
+          - "openssl,native-tls,async-compat"
+          - "openssl,native-tls"
+          - "openssl-vendored,native-tls-vendored,async-compat"
+          - "openssl-vendored,native-tls-vendored"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+          
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+
+  win-msvc:
+    strategy:
+      fail-fast: false
+      matrix:
+        features: 
+          - "rustcrypto,rustls-tls,async-compat"
+          - "rustcrypto,rustls-tls"
+    runs-on: windows-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+          
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+
+  win_gnu:
+    strategy:
+      fail-fast: false
+      matrix:
+        features: 
+          - "rustcrypto,rustls-tls,async-compat"
+          - "rustcrypto,rustls-tls"
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2 environment and MinGW+Rust toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            base-devel
+            pkg-config
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-rust
+        
+      - name: "Checkout"
+        uses: actions/checkout@v3
+          
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu
+        
+  win-msvc_openssl:
+    strategy:
+      fail-fast: false
+      matrix:
+        features: 
+          - "openssl,native-tls,async-compat"
+          - "openssl,native-tls"
+          - "openssl-vendored,native-tls-vendored,async-compat"
+          - "openssl-vendored,native-tls-vendored"
+    runs-on: windows-latest
+    steps:
+      - name: "Install OpenSSL"
+        run: |
+          vcpkg install openssl:x64-windows-static
+          vcpkg integrate install
+
+      - name: "Checkout"
+        uses: actions/checkout@v3
+          
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
+        env:
+          OPENSSL_DIR: 'C:\vcpkg\installed\x64-windows-static'
+
+  win_gnu_openssl:
+    strategy:
+      fail-fast: false
+      matrix:
+        features: 
+          - "openssl,native-tls,async-compat"
+          - "openssl,native-tls"
+          - "openssl-vendored,native-tls-vendored,async-compat"
+          - "openssl-vendored,native-tls-vendored"
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - name: Setup MSYS2 environment and MinGW+Rust toolchain
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            base-devel
+            openssl-devel
+            pkg-config
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-rust
+        
+      - name: "Checkout"
+        uses: actions/checkout@v3
+          
+      - name: "Run HTTP test"
+        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu

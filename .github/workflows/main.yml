@@ -19,26 +19,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  code_quality_check:
-    strategy:
-      fail-fast: false
-      matrix:
-        features:
-          - "rustcrypto,rustls-tls,async-compat"
-          - "openssl,native-tls,async-compat"
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-        
-      - name: "Check for compiler errors"
-        run: cargo check --no-default-features --features ${{ matrix.features }}
-          
-      - name: "Run linter"
-        run: cargo clippy --no-default-features --features ${{ matrix.features }} -- -D warnings
-
   formatting_check:
-    needs: code_quality_check
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
@@ -51,13 +32,12 @@ jobs:
         run: cargo +nightly fmt --check
 
   dependancy_check:
-    needs: formatting_check
     strategy:
       fail-fast: false
       matrix:
         features:
           - "rustcrypto,rustls-tls,async-compat"
-          - "openssl,native-tls"
+          - "openssl,native-tls,log-stream"
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout"
@@ -69,169 +49,10 @@ jobs:
       - name: "Check dependancies"
         run: cargo deny --no-default-features --features ${{ matrix.features }} check
           
-  test_suite:
-    needs: [code_quality_check, formatting_check]
-    strategy:
-      fail-fast: false
-      matrix:
-        features: 
-          - "rustcrypto,rustls-tls,async-compat"
-          - "rustcrypto,rustls-tls"
-          - "openssl,native-tls,async-compat"
-          - "openssl,native-tls"
-          - "openssl-vendored,native-tls-vendored,async-compat"
-          - "openssl-vendored,native-tls-vendored"
-    runs-on: ubuntu-latest
-    env:
-      INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN: ${{ secrets.LOCAL_SERVER_TOKEN }}
-      INTERACTSHRS_TEST_LOCAL_SERVER_FQDN: ${{ secrets.LOCAL_SERVER_FQDN }}
-      INTERACTSHRS_TEST_LOCAL_SERVER_DNS_OVERRIDE_ADDR: "127.0.0.1"
-      INTERACTSHRS_TEST_PROXY_ADDR: "127.0.0.1"
-      INTERACTSHRS_TEST_PROXY_PORT: "3128"
-      INTERACTSHRS_TEST_CERT_SUBJ: ${{ secrets.CERT_SUBJECT_LINE }}
-
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-
-      - name: "Start proxy server"
-        run: docker-compose --file ./docker/squid/docker-compose.yml up -d
-
-      - name: "Start local Interactsh server"
-        run: docker-compose --file ./docker/local_server/docker-compose.yml up -d
-          
-      - name: "Run tests"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast
-
-      - name: "Stop proxy server"
-        run: docker-compose --file ./docker/squid/docker-compose.yml down
-
-      - name: "Stop local Interactsh server"
-        run: docker-compose --file ./docker/local_server/docker-compose.yml down
+  call_test_suite:
+    uses: ./.github/workflows/test_suite.yml
+    secrets: inherit
         
-  os_compat_nix:
-    needs: test_suite
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        features: 
-          - "rustcrypto,rustls-tls,async-compat"
-          - "rustcrypto,rustls-tls"
-          - "openssl,native-tls,async-compat"
-          - "openssl,native-tls"
-          - "openssl-vendored,native-tls-vendored,async-compat"
-          - "openssl-vendored,native-tls-vendored"
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-          
-      - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-
-  os_compat_win-msvc:
-    needs: test_suite
-    strategy:
-      fail-fast: false
-      matrix:
-        features: 
-          - "rustcrypto,rustls-tls,async-compat"
-          - "rustcrypto,rustls-tls"
-    runs-on: windows-latest
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v3
-          
-      - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-
-  os_compat_win_gnu:
-    needs: test_suite
-    strategy:
-      fail-fast: false
-      matrix:
-        features: 
-          - "rustcrypto,rustls-tls,async-compat"
-          - "rustcrypto,rustls-tls"
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Setup MSYS2 environment and MinGW+Rust toolchain
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            git
-            base-devel
-            pkg-config
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-rust
-        
-      - name: "Checkout"
-        uses: actions/checkout@v3
-          
-      - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu
-
-  os_compat_win-msvc_openssl:
-    needs: test_suite
-    strategy:
-      fail-fast: false
-      matrix:
-        features: 
-          - "openssl,native-tls,async-compat"
-          - "openssl,native-tls"
-          - "openssl-vendored,native-tls-vendored,async-compat"
-          - "openssl-vendored,native-tls-vendored"
-    runs-on: windows-latest
-    steps:
-      - name: "Install OpenSSL"
-        run: |
-          vcpkg install openssl:x64-windows-static
-          vcpkg integrate install
-
-      - name: "Checkout"
-        uses: actions/checkout@v3
-          
-      - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub
-        env:
-          OPENSSL_DIR: 'C:\vcpkg\installed\x64-windows-static'
-
-  os_compat_win_gnu_openssl:
-    needs: test_suite
-    strategy:
-      fail-fast: false
-      matrix:
-        features: 
-          - "openssl,native-tls,async-compat"
-          - "openssl,native-tls"
-          - "openssl-vendored,native-tls-vendored,async-compat"
-          - "openssl-vendored,native-tls-vendored"
-    runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
-    steps:
-      - name: Setup MSYS2 environment and MinGW+Rust toolchain
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            git
-            base-devel
-            openssl-devel
-            pkg-config
-            mingw-w64-x86_64-toolchain
-            mingw-w64-x86_64-rust
-        
-      - name: "Checkout"
-        uses: actions/checkout@v3
-          
-      - name: "Run HTTP test"
-        run: cargo test --no-default-features --features ${{ matrix.features }} --no-fail-fast http_logs_from_pub --target x86_64-pc-windows-gnu
+  call_os_compat:
+    needs: call_test_suite
+    uses: ./.github/workflows/os_compat.yml

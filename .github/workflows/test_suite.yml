@@ -1,0 +1,64 @@
+name: Cargo Test Suite
+on:
+  push:
+    paths-ignore:
+      - 'examples/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'LICENSE*'
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      LOCAL_SERVER_TOKEN:
+        required: true
+      LOCAL_SERVER_FQDN:
+        required: true
+      CERT_SUBJECT_LINE:
+        required: true
+
+jobs:
+  call_compile_check:
+    uses: ./.github/workflows/compile_testing.yml
+
+  test_suite:
+    needs: call_compile_check
+    strategy:
+      fail-fast: false
+      matrix:
+        crypto:
+          - "rustcrypto,rustls-tls"
+          - "openssl,native-tls"
+          - "openssl-vendored,native-tls-vendored"
+        compat:
+          - ""
+          - ",async-compat"
+        log_stream:
+          - ""
+          - ",log-stream"
+    runs-on: ubuntu-latest
+    env:
+      INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN: ${{ secrets.LOCAL_SERVER_TOKEN }}
+      INTERACTSHRS_TEST_LOCAL_SERVER_FQDN: ${{ secrets.LOCAL_SERVER_FQDN }}
+      INTERACTSHRS_TEST_LOCAL_SERVER_DNS_OVERRIDE_ADDR: "127.0.0.1"
+      INTERACTSHRS_TEST_PROXY_ADDR: "127.0.0.1"
+      INTERACTSHRS_TEST_PROXY_PORT: "3128"
+      INTERACTSHRS_TEST_CERT_SUBJ: ${{ secrets.CERT_SUBJECT_LINE }}
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+
+      - name: "Start proxy server"
+        run: docker-compose --file ./docker/squid/docker-compose.yml up -d
+
+      - name: "Start local Interactsh server"
+        run: docker-compose --file ./docker/local_server/docker-compose.yml up -d
+          
+      - name: "Run tests"
+        run: cargo test --no-default-features --features ${{ matrix.crypto }}${{ matrix.compat }}${{ matrix.log_stream }} --no-fail-fast
+
+      - name: "Stop proxy server"
+        run: docker-compose --file ./docker/squid/docker-compose.yml down
+
+      - name: "Stop local Interactsh server"
+        run: docker-compose --file ./docker/local_server/docker-compose.yml down

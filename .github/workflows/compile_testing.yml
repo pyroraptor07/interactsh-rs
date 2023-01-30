@@ -1,0 +1,39 @@
+name: Compile and Linter Tests
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  compile_check:
+    strategy:
+      fail-fast: false
+      matrix:
+        crypto:
+          - "rustcrypto,rustls-tls"
+          - "openssl,native-tls"
+          - "openssl-vendored,native-tls-vendored"
+        compat:
+          - ""
+          - ",async-compat"
+        log_stream:
+          - ""
+          - ",log-stream"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+        
+      - name: "Check for compiler errors"
+        run: cargo check --no-default-features --features ${{ matrix.crypto }}${{ matrix.compat }}${{ matrix.log_stream }}
+
+      - name: "Attempt build"
+        run: cargo build --no-default-features --features ${{ matrix.crypto }}${{ matrix.compat }}${{ matrix.log_stream }}
+
+  lint_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v3
+
+      - name: "Run linter"
+        run: cargo clippy -- -D warnings
