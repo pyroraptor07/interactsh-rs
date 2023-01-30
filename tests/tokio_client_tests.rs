@@ -60,10 +60,11 @@ async fn new_client_receives_http_logs_from_pub_servers() {
     shared::public_tests_new_client::client_receives_http_logs_from_pub_servers().await;
 }
 
-// #[tokio::test]
-// async fn log_stream_receives_http_logs_from_pub_servers() {
-//     shared::public_tests_new_client::log_stream_receives_http_logs_from_pub_servers().await;
-// }
+#[cfg(feature = "log-stream")]
+#[tokio::test]
+async fn log_stream_receives_http_logs_from_pub_servers() {
+    shared::public_tests_new_client::log_stream_receives_http_logs_from_pub_servers().await;
+}
 
 #[tokio::test]
 #[ignore]

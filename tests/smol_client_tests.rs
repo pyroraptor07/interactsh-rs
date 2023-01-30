@@ -95,13 +95,13 @@ fn new_client_receives_http_logs_from_pub_servers() {
     });
 }
 
-// #[cfg(feature = "async-compat")]
-// #[test]
-// fn log_stream_receives_http_logs_from_pub_servers() {
-//     smol::block_on(async {
-//         shared::public_tests_new_client::log_stream_receives_http_logs_from_pub_servers().await;
-//     });
-// }
+#[cfg(all(feature = "async-compat", feature = "log-stream"))]
+#[test]
+fn log_stream_receives_http_logs_from_pub_servers() {
+    smol::block_on(async {
+        shared::public_tests_new_client::log_stream_receives_http_logs_from_pub_servers().await;
+    });
+}
 
 #[cfg(feature = "async-compat")]
 #[test]
