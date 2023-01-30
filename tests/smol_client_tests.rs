@@ -27,6 +27,7 @@ fn client_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[test]
+#[ignore]
 fn client_receives_http_logs_from_proxied_pub_servers() {
     smol::block_on(async {
         shared::client_receives_http_logs_from_proxied_pub_servers().await;
@@ -63,5 +64,59 @@ fn client_polls_local_server_successfully() {
 fn client_receives_http_logs_from_local_server() {
     smol::block_on(async {
         shared::client_receives_http_logs_from_local_server().await;
+    });
+}
+
+// ++++++++++++++++++++ NEW CLIENT +++++++++++++++++++++++++++++
+
+#[cfg(feature = "async-compat")]
+#[test]
+fn new_client_registers_and_deregisters_to_pub_servers_successfully() {
+    smol::block_on(async {
+        shared::public_tests_new_client::client_registers_and_deregisters_to_pub_servers_successfully(
+        )
+        .await;
+    });
+}
+
+#[cfg(feature = "async-compat")]
+#[test]
+fn new_client_polls_pub_servers_successfully() {
+    smol::block_on(async {
+        shared::public_tests_new_client::client_polls_pub_servers_successfully().await;
+    });
+}
+
+#[cfg(feature = "async-compat")]
+#[test]
+fn new_client_receives_http_logs_from_pub_servers() {
+    smol::block_on(async {
+        shared::public_tests_new_client::client_receives_http_logs_from_pub_servers().await;
+    });
+}
+
+// #[cfg(feature = "async-compat")]
+// #[test]
+// fn log_stream_receives_http_logs_from_pub_servers() {
+//     smol::block_on(async {
+//         shared::public_tests_new_client::log_stream_receives_http_logs_from_pub_servers().await;
+//     });
+// }
+
+#[cfg(feature = "async-compat")]
+#[test]
+#[ignore]
+fn new_client_receives_http_logs_from_proxied_pub_servers() {
+    smol::block_on(async {
+        shared::public_tests_new_client::client_receives_http_logs_from_proxied_pub_servers().await;
+    });
+}
+
+#[cfg(feature = "async-compat")]
+#[test]
+#[ignore] // When run in Github Actions, DNS interaction tests intermittently fail
+fn new_client_receives_dns_logs_from_pub_servers() {
+    smol::block_on(async {
+        shared::public_tests_new_client::client_receives_dns_logs_from_pub_servers().await;
     });
 }

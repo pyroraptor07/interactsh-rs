@@ -136,7 +136,7 @@ impl InteractshClient {
     pub fn log_stream(
         &self,
         poll_period: Duration,
-    ) -> impl TryStream<Ok = LogEntry, Error = Whatever> {
+    ) -> impl Stream<Item = Result<LogEntry, Whatever>> {
         self.log_stream_map_filter(poll_period, |res| {
             match res {
                 LogPollResult::NoNewLogs => None,
@@ -150,32 +150,32 @@ impl InteractshClient {
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    // use std::time::Duration;
 
-    use futures_util::{pin_mut, StreamExt};
+    // use futures_util::{pin_mut, StreamExt};
 
-    // use super::*;
-    use crate::client_next::*;
+    // // use super::*;
+    // use crate::client_next::*;
 
     // #[test]
-    fn log_stream_works() {
-        let future = async {
-            color_eyre::install().ok();
+    // fn log_stream_works() {
+    //     let future = async {
+    //         color_eyre::install().ok();
 
-            let client = ClientBuilder::default().build().unwrap();
-            client.register().await.unwrap();
+    //         let client = ClientBuilder::default().build().unwrap();
+    //         client.register().await.unwrap();
 
-            let interaction_url = format!("https://{}", client.get_interaction_fqdn().unwrap());
-            reqwest::get(interaction_url).await.unwrap();
+    //         let interaction_url = format!("https://{}", client.get_interaction_fqdn().unwrap());
+    //         reqwest::get(interaction_url).await.unwrap();
 
-            let log_stream = client.log_stream(Duration::from_secs(5));
-            pin_mut!(log_stream);
-            let poll_result = log_stream.next().await;
+    //         let log_stream = client.log_stream(Duration::from_secs(5));
+    //         pin_mut!(log_stream);
+    //         let poll_result = log_stream.next().await;
 
-            assert!(poll_result.is_some());
-            client.force_deregister().await;
-        };
+    //         assert!(poll_result.is_some());
+    //         client.force_deregister().await;
+    //     };
 
-        smol::block_on(future);
-    }
+    //     smol::block_on(future);
+    // }
 }

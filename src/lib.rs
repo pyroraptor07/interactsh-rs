@@ -87,7 +87,6 @@ pub mod client;
 #[cfg(all(
     any(feature = "rustls-tls", feature = "native-tls"),
     any(feature = "rustcrypto", feature = "openssl"),
-    feature = "client-next",
 ))]
 pub mod client_next;
 #[cfg(all(
