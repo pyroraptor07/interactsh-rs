@@ -29,15 +29,17 @@ pub fn build_pub_client(server: String, proxy: Option<Proxy>) -> InteractshClien
 
 /// Trys to register a client with any of the known public servers
 /// and returns the first successfully registered client
-pub async fn try_register_to_any_of_pub_servers(proxy: Option<Proxy>) -> InteractshClient {
+pub async fn try_register_to_any_of_pub_servers(
+    proxy: Option<Proxy>,
+) -> (InteractshClient, String) {
     let mut pub_servers = DEFAULT_INTERACTSH_SERVERS.iter();
 
     while let Some(server) = pub_servers.next() {
         let client = build_pub_client(server.to_string(), proxy.clone());
         let register_result = client.register().await;
 
-        if register_result.is_ok() {
-            return client;
+        if let Ok(fqdn) = register_result {
+            return (client, fqdn);
         }
     }
 

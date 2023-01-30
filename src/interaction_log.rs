@@ -153,7 +153,7 @@ mod timestamp_unixstr_parse {
         deserializer: D,
     ) -> Result<OffsetDateTime, D::Error> {
         OffsetDateTime::parse(<_>::deserialize(deserializer)?, &Rfc3339)
-            .map_err(|e| de::Error::custom(format!("{}", e)))
+            .map_err(|e| de::Error::custom(format!("{e}")))
     }
 }
 

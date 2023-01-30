@@ -2,7 +2,7 @@ use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
-use parking_lot::RwLock;
+use async_lock::RwLock;
 use rand::seq::SliceRandom;
 use reqwest::Proxy;
 use secrecy::Secret;
@@ -25,7 +25,7 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
 
 enum RsaKeyGen {
     BuilderGen(usize),
-    UserProvided(RSAPrivKey),
+    UserProvided(Box<RSAPrivKey>),
 }
 
 pub struct ClientBuilder {
@@ -67,7 +67,7 @@ impl ClientBuilder {
     /// Provides an existing RSA private key for the client to use.
     pub fn with_existing_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
         Self {
-            rsa_key_gen: Some(RsaKeyGen::UserProvided(rsa_key)),
+            rsa_key_gen: Some(RsaKeyGen::UserProvided(Box::new(rsa_key))),
             ..self
         }
     }
@@ -164,7 +164,7 @@ impl ClientBuilder {
             RsaKeyGen::BuilderGen(rsa_key_size) => {
                 RSAPrivKey::generate(rsa_key_size).whatever_context("RSA key generation failed")?
             }
-            RsaKeyGen::UserProvided(rsa_key) => rsa_key,
+            RsaKeyGen::UserProvided(rsa_key) => *rsa_key,
         };
         let pub_key = rsa_key
             .get_pub_key()

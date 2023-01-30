@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use rand::distributions::{Alphanumeric, DistString};
 use rand::thread_rng;
 
+use super::server_comm::InteractionFqdn;
 use crate::client_shared::server_comm::ClientStatus;
 
 
@@ -41,19 +44,26 @@ impl CorrelationData {
             correlation_id,
         }
     }
+
+    pub fn into_client_status(self, server: String) -> (ClientStatus, Arc<InteractionFqdn>) {
+        let interaction_fqdn = Arc::new(InteractionFqdn {
+            subdomain: self.subdomain,
+            server,
+        });
+
+        let fqdn_ref = Arc::clone(&interaction_fqdn);
+
+        let status = ClientStatus::Registered {
+            interaction_fqdn,
+            correlation_id: self.correlation_id,
+        };
+
+        (status, fqdn_ref)
+    }
 }
 
 impl Default for CorrelationData {
     fn default() -> Self {
         Self::generate_data(&CorrelationConfig::default())
-    }
-}
-
-impl From<CorrelationData> for ClientStatus {
-    fn from(data: CorrelationData) -> Self {
-        ClientStatus::Registered {
-            subdomain: data.subdomain,
-            correlation_id: data.correlation_id,
-        }
     }
 }

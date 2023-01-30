@@ -15,13 +15,30 @@ use super::http_utils::{
     RegisterData,
 };
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(Debug)]
 pub enum ClientStatus {
     Unregistered,
     Registered {
-        subdomain: String,
+        interaction_fqdn: Arc<InteractionFqdn>,
         correlation_id: String,
     },
+}
+
+#[derive(Debug)]
+pub struct InteractionFqdn {
+    pub(crate) subdomain: String,
+    pub(crate) server: String,
+}
+
+impl std::fmt::Display for InteractionFqdn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{subdomain}.{server}",
+            subdomain = self.subdomain,
+            server = self.server,
+        )
+    }
 }
 
 enum RegistrationAction {
@@ -52,16 +69,16 @@ pub struct ServerComm {
 }
 
 impl ServerComm {
-    pub(crate) fn get_interaction_fqdn(&self) -> Option<String> {
+    pub(crate) fn get_interaction_fqdn(&self) -> Option<Arc<InteractionFqdn>> {
         match &self.status {
             ClientStatus::Unregistered => None,
-            ClientStatus::Registered { subdomain, .. } => {
-                Some(format!("{}.{}", subdomain, self.server_name))
-            }
+            ClientStatus::Registered {
+                interaction_fqdn, ..
+            } => Some(Arc::clone(interaction_fqdn)),
         }
     }
 
-    pub(crate) async fn register(&mut self) -> Result<(), Whatever> {
+    pub(crate) async fn register(&mut self) -> Result<Arc<InteractionFqdn>, Whatever> {
         if let ClientStatus::Registered { .. } = self.status {
             whatever!("Already registered");
         }
@@ -79,9 +96,12 @@ impl ServerComm {
 
         self.perform_registration_action(RegistrationAction::Register, post_data)
             .await?;
-        self.status = correlation_data.into();
 
-        Ok(())
+        let (status, fqdn) = correlation_data.into_client_status(self.server_name.clone());
+
+        self.status = status;
+
+        Ok(fqdn)
     }
 
     pub(crate) async fn deregister(&mut self) -> Result<(), Whatever> {

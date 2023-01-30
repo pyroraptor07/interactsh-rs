@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use parking_lot::RwLock;
+use async_lock::RwLock;
 use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
@@ -40,29 +40,33 @@ pub struct InteractshClient {
 }
 
 impl InteractshClient {
-    pub fn get_interaction_fqdn(&self) -> Option<String> {
-        let comm = self.server_comm.read();
-        comm.get_interaction_fqdn()
+    pub async fn get_interaction_fqdn(&self) -> Option<String> {
+        let comm = self.server_comm.read().await;
+        comm.get_interaction_fqdn().map(|fqdn| fqdn.to_string())
     }
 
-    pub async fn register(&self) -> Result<(), Whatever> {
-        let mut comm = self.server_comm.write();
-        comm.register().await
+    pub async fn register(&self) -> Result<String, Whatever> {
+        let mut comm = self.server_comm.write().await;
+        let fqdn = comm.register().await?;
+
+        Ok(fqdn.to_string())
     }
 
     pub async fn deregister(&self) -> Result<(), Whatever> {
-        let mut comm = self.server_comm.write();
-        comm.deregister().await
+        let mut comm = self.server_comm.write().await;
+        comm.deregister().await?;
+
+        Ok(())
     }
 
     pub async fn force_deregister(&self) {
-        let mut comm = self.server_comm.write();
+        let mut comm = self.server_comm.write().await;
         comm.force_deregister().await;
     }
 
     pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, Whatever> {
         let response = {
-            let comm = self.server_comm.read();
+            let comm = self.server_comm.read().await;
             comm.poll().await
         };
 
@@ -102,8 +106,8 @@ impl InteractshClient {
                 timer.next().await;
 
                 let response = {
-                    let comm = server_comm.read();
-                    if comm.status == ClientStatus::Unregistered {
+                    let comm = server_comm.read().await;
+                    if let ClientStatus::Unregistered = comm.status {
                         break 'poll_loop;
                     }
 
@@ -154,7 +158,7 @@ impl InteractshClient {
     ///     .build()
     ///     .expect("Failed to build client");
     ///
-    /// client.register().await.expect("Failed to register client");
+    /// let _fqdn = client.register().await.expect("Failed to register client");
     ///
     /// // Create a log stream that will poll the server every 5 seconds for 30 seconds
     /// // Must be mutable
