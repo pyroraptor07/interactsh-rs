@@ -26,15 +26,15 @@ jobs:
       fail-fast: false
       matrix:
         crypto:
-          - "rustcrypto,rustls-tls"
-          - "openssl,native-tls"
-          - "openssl-vendored,native-tls-vendored"
+          - "rustcrypto rustls-tls"
+          - "openssl native-tls"
+          - "openssl-vendored native-tls-vendored"
         compat:
           - ""
-          - ",async-compat"
+          - " async-compat"
         log_stream:
           - ""
-          - ",log-stream"
+          - " log-stream"
     runs-on: ubuntu-latest
     env:
       INTERACTSHRS_TEST_LOCAL_SERVER_TOKEN: ${{ secrets.LOCAL_SERVER_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
         run: docker-compose --file ./docker/local_server/docker-compose.yml up -d
           
       - name: "Run tests"
-        run: cargo test --no-default-features --features ${{ matrix.crypto }}${{ matrix.compat }}${{ matrix.log_stream }} --no-fail-fast
+        run: cargo test --no-default-features --features "${{ matrix.crypto }}${{ matrix.compat }}${{ matrix.log_stream }}" --no-fail-fast
 
       - name: "Stop proxy server"
         run: docker-compose --file ./docker/squid/docker-compose.yml down
