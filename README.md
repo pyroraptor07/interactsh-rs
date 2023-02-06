@@ -8,6 +8,8 @@
 
 A Rust client library for getting interaction logs from [Interactsh](https://github.com/projectdiscovery/interactsh) servers. See a basic example below; check out the [examples](https://github.com/pyroraptor07/interactsh-rs/tree/main/examples) or the client module in the [API docs](https://docs.rs/interactsh-rs/latest/interactsh_rs/client/index.html) for more detailed use.
 
+**IMPORTANT NOTE: The 0.4 and possibly 0.5 releases are going to be major under the hood changes. The 0.4 release will include some changes to the existing public API.**
+
 ## Basic Use Example
 ```rust
 use std::time::Duration;
