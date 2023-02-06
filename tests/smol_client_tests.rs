@@ -27,7 +27,6 @@ fn client_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[test]
-#[ignore]
 fn client_receives_http_logs_from_proxied_pub_servers() {
     smol::block_on(async {
         shared::client_receives_http_logs_from_proxied_pub_servers().await;
@@ -105,7 +104,6 @@ fn log_stream_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[test]
-#[ignore]
 fn new_client_receives_http_logs_from_proxied_pub_servers() {
     smol::block_on(async {
         shared::public_tests_new_client::client_receives_http_logs_from_proxied_pub_servers().await;

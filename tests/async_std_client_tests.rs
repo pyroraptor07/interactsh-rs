@@ -21,7 +21,6 @@ async fn client_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[async_std::test]
-#[ignore]
 async fn client_receives_http_logs_from_proxied_pub_servers() {
     shared::client_receives_http_logs_from_proxied_pub_servers().await;
 }
@@ -81,7 +80,6 @@ async fn log_stream_receives_http_logs_from_pub_servers() {
 
 #[cfg(feature = "async-compat")]
 #[async_std::test]
-#[ignore]
 async fn new_client_receives_http_logs_from_proxied_pub_servers() {
     shared::public_tests_new_client::client_receives_http_logs_from_proxied_pub_servers().await;
 }
