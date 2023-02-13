@@ -1,7 +1,7 @@
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
-use cfg_if::cfg_if;
 
+use cfg_if::cfg_if;
 use rand::distributions::{Alphanumeric, DistString};
 use rand::seq::SliceRandom;
 use rand::thread_rng;

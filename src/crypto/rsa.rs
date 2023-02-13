@@ -2,7 +2,7 @@
 //! by the interactsh-rs client.
 use base64::engine::general_purpose;
 use base64::Engine as _;
-#[cfg(feature = "openssl")]
+#[cfg(all(feature = "openssl", not(feature = "rustcrypto")))]
 use openssl::pkey::{PKey, Private, Public};
 #[cfg(feature = "rustcrypto")]
 use rsa::{RsaPrivateKey, RsaPublicKey};
