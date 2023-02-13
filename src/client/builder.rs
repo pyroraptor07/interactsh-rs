@@ -279,6 +279,7 @@ impl Default for ClientBuilder {
             rsa_key_size: Some(2048),
             server: Some(server.to_string()),
             auth_token: None,
+            tls_option: TlsOption::default(),
             proxies: None,
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,
