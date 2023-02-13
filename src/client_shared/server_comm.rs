@@ -4,7 +4,7 @@ use reqwest::StatusCode;
 use secrecy::{ExposeSecret, Secret};
 use serde::Serialize;
 use smallvec::SmallVec;
-use snafu::{whatever, ResultExt, Whatever};
+use snafu::{ensure, ResultExt};
 
 use super::correlation::{CorrelationConfig, CorrelationData};
 use super::http_utils::{
@@ -14,6 +14,7 @@ use super::http_utils::{
     PollResponse,
     RegisterData,
 };
+use crate::client_shared::errors::*;
 
 #[derive(Debug)]
 pub enum ClientStatus {
@@ -22,6 +23,15 @@ pub enum ClientStatus {
         interaction_fqdn: Arc<InteractionFqdn>,
         correlation_id: String,
     },
+}
+
+impl ClientStatus {
+    pub fn is_registered(&self) -> bool {
+        match self {
+            Self::Registered { .. } => true,
+            Self::Unregistered => false,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -78,10 +88,11 @@ impl ServerComm {
         }
     }
 
-    pub(crate) async fn register(&mut self) -> Result<Arc<InteractionFqdn>, Whatever> {
-        if let ClientStatus::Registered { .. } = self.status {
-            whatever!("Already registered");
-        }
+    pub(crate) async fn register(&mut self) -> Result<Arc<InteractionFqdn>, RegistrationError> {
+        ensure!(
+            !self.status.is_registered(),
+            registration_error::AlreadyRegisteredSnafu
+        );
 
         let correlation_data = match &self.correlation_config {
             Some(config) => CorrelationData::generate_data(config),
@@ -104,9 +115,11 @@ impl ServerComm {
         Ok(fqdn)
     }
 
-    pub(crate) async fn deregister(&mut self) -> Result<(), Whatever> {
+    pub(crate) async fn deregister(&mut self) -> Result<(), RegistrationError> {
         let correlation_id = match &self.status {
-            ClientStatus::Unregistered => whatever!("Not currently registered"),
+            ClientStatus::Unregistered => {
+                return registration_error::NotCurrentlyRegisteredSnafu.fail()
+            }
             ClientStatus::Registered { correlation_id, .. } => correlation_id.clone(),
         };
 
@@ -127,9 +140,9 @@ impl ServerComm {
         self.status = ClientStatus::Unregistered;
     }
 
-    pub(crate) async fn poll(&self) -> Result<PollResponse, Whatever> {
+    pub(crate) async fn poll(&self) -> Result<PollResponse, PollError> {
         let correlation_id = match &self.status {
-            ClientStatus::Unregistered => whatever!("Not currently registered"),
+            ClientStatus::Unregistered => return poll_error::NotCurrentlyRegisteredSnafu.fail(),
             ClientStatus::Registered { correlation_id, .. } => correlation_id.clone(),
         };
         let poll_url = format!("https://{server_name}/poll", server_name = self.server_name);
@@ -143,7 +156,7 @@ impl ServerComm {
         let get_response =
             make_http_request(&self.reqwest_client, self.auth_token.as_ref(), request_info)
                 .await
-                .whatever_context("Poll failed")?;
+                .context(poll_error::PollFailureSnafu)?;
 
         let response_status = get_response.status();
 
@@ -151,7 +164,7 @@ impl ServerComm {
             let response_body = get_response
                 .json::<PollResponse>()
                 .await
-                .whatever_context("Failed to parse response body")?;
+                .context(poll_error::ResponseJsonParseFailedSnafu)?;
 
             Ok(response_body)
         } else {
@@ -160,7 +173,12 @@ impl ServerComm {
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = response_status.as_u16();
-            whatever!("Poll failed: {} - {}", status_code, server_msg)
+
+            poll_error::PollErrorStatusSnafu {
+                server_msg,
+                status_code,
+            }
+            .fail()
         }
     }
 
@@ -168,7 +186,7 @@ impl ServerComm {
         &mut self,
         action: RegistrationAction,
         post_data: P,
-    ) -> Result<(), Whatever> {
+    ) -> Result<(), RegistrationError> {
         let action_url = action.into_action_url(&self.server_name);
         let request_info = HttpRequest::Post {
             url: action_url,
@@ -178,20 +196,25 @@ impl ServerComm {
         let register_response =
             make_http_request(&self.reqwest_client, self.auth_token.as_ref(), request_info)
                 .await
-                .whatever_context("Failed to send request")?;
+                .context(registration_error::RequestSendFailureSnafu)?;
 
         let response_status = register_response.status();
         if response_status.is_success() {
             Ok(())
         } else if response_status == StatusCode::UNAUTHORIZED {
-            whatever!("Unauthorized")
+            registration_error::UnauthorizedSnafu.fail()
         } else {
             let server_msg = register_response
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
             let status_code = response_status.as_u16();
-            whatever!("Registration failed: {} - {}", status_code, server_msg)
+
+            registration_error::RegistrationFailureSnafu {
+                server_msg,
+                status_code,
+            }
+            .fail()
         }
     }
 }

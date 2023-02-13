@@ -28,6 +28,10 @@ reqwest-native-tls = ["native-tls"]
 reqwest-native-tls-vendored = ["native-tls-vendored"]
 reqwest-rustls-tls = ["rustls-tls"]
 
+# Snafu backtrace features
+backtrace-crate = ["snafu/backtraces-impl-backtrace-crate"]
+backtrace-std = ["snafu/backtraces-impl-std"]
+
 # Other features
 async-compat = ["dep:async-compat"]
 client-next = []

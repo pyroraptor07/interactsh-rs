@@ -3,8 +3,6 @@ use interactsh_rs::client_next::LogPollResult;
 #[cfg(feature = "log-stream")]
 use interactsh_rs::futures_util::StreamExt;
 use interactsh_rs::interaction_log::*;
-#[cfg(feature = "log-stream")]
-use snafu::ResultExt;
 
 use super::utils::{public_utils_new_client, shared_utils};
 
@@ -42,11 +40,9 @@ pub async fn log_stream_receives_http_logs_from_pub_servers() {
 
     let mut log_stream = client.log_stream_filter_map(std::time::Duration::from_secs(1), |res| {
         match res {
-            LogPollResult::NoNewLogs => {
-                Some(Err("No new logs recieved").whatever_context("No new logs recieved"))
-            }
+            LogPollResult::NoNewLogs => Some(Err("No new logs received")),
             LogPollResult::ReceivedNewLog(log) => Some(Ok(log)),
-            LogPollResult::Error(e) => Some(Err(e)),
+            LogPollResult::Error(_) => Some(Err("Poll error")),
         }
     });
 
@@ -63,7 +59,7 @@ pub async fn log_stream_receives_http_logs_from_pub_servers() {
         }
     }
 
-    panic!("No HTTP logs recieved from public server");
+    panic!("No HTTP logs received from public server");
 }
 
 
@@ -80,7 +76,7 @@ pub async fn client_receives_http_logs_from_pub_servers() {
 
     let log_entries = match log_data {
         Some(log_entries) => log_entries,
-        None => panic!("No logs recieved from public server"),
+        None => panic!("No logs received from public server"),
     };
 
     let mut log_entries = log_entries.into_iter();
@@ -103,7 +99,7 @@ pub async fn client_receives_http_logs_from_pub_servers() {
         }
     }
 
-    panic!("No HTTP logs recieved from public server");
+    panic!("No HTTP logs received from public server");
 }
 
 
@@ -121,7 +117,7 @@ pub async fn client_receives_http_logs_from_proxied_pub_servers() {
 
     let log_entries = match log_data {
         Some(log_entries) => log_entries,
-        None => panic!("No logs recieved from public server"),
+        None => panic!("No logs received from public server"),
     };
 
     let mut log_entries = log_entries.into_iter();
@@ -144,7 +140,7 @@ pub async fn client_receives_http_logs_from_proxied_pub_servers() {
         }
     }
 
-    panic!("No HTTP logs recieved from public server");
+    panic!("No HTTP logs received from public server");
 }
 
 
@@ -161,7 +157,7 @@ pub async fn client_receives_dns_logs_from_pub_servers() {
 
     let log_entries = match log_data {
         Some(log_entries) => log_entries,
-        None => panic!("No logs recieved from public server"),
+        None => panic!("No logs received from public server"),
     };
 
     let mut log_entries = log_entries.into_iter();
@@ -184,5 +180,5 @@ pub async fn client_receives_dns_logs_from_pub_servers() {
         }
     }
 
-    panic!("No DNS logs recieved from public server");
+    panic!("No DNS logs received from public server");
 }

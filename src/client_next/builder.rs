@@ -6,10 +6,11 @@ use async_lock::RwLock;
 use rand::seq::SliceRandom;
 use reqwest::Proxy;
 use secrecy::Secret;
-use snafu::{OptionExt, ResultExt, Whatever};
+use snafu::{OptionExt, ResultExt};
 use uuid::Uuid;
 
 use super::{CorrelationConfig, InteractshClient};
+use crate::client_shared::errors::{client_build_error, ClientBuildError};
 use crate::client_shared::server_comm::{ClientStatus, ServerComm};
 use crate::crypto::rsa::RSAPrivKey;
 
@@ -23,6 +24,7 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     // "oast.me",
 ];
 
+#[allow(unused)]
 enum RsaKeyGen {
     BuilderGen(usize),
     UserProvided(Box<RSAPrivKey>),
@@ -65,12 +67,12 @@ impl ClientBuilder {
     }
 
     /// Provides an existing RSA private key for the client to use.
-    pub fn with_existing_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
-        Self {
-            rsa_key_gen: Some(RsaKeyGen::UserProvided(Box::new(rsa_key))),
-            ..self
-        }
-    }
+    // pub fn with_existing_rsa_key(self, rsa_key: RSAPrivKey) -> Self {
+    //     Self {
+    //         rsa_key_gen: Some(RsaKeyGen::UserProvided(Box::new(rsa_key))),
+    //         ..self
+    //     }
+    // }
 
     /// Sets the Interactsh server that the client will connect to.
     pub fn with_server(self, server: String) -> Self {
@@ -93,7 +95,7 @@ impl ClientBuilder {
         }
     }
 
-    /// Takes in an optional [CorrellationConfig](super::CorrelationConfig) that
+    /// Takes in an optional [CorrelationConfig](super::CorrelationConfig) that
     /// can be used to set the subdomain length and correlation ID length. This
     /// must match what the Interactsh server is configured for. If omitted,
     /// the client will use the defaults of 33 for the subdomain and
@@ -152,25 +154,27 @@ impl ClientBuilder {
         }
     }
 
-    pub fn build(self) -> Result<InteractshClient, Whatever> {
+    pub fn build(self) -> Result<InteractshClient, ClientBuildError> {
         // Ensure server name and rsa key options were set
-        let server = self.server.whatever_context("Missing server")?;
+        let server = self
+            .server
+            .context(client_build_error::MissingServerSnafu)?;
         let rsa_key_gen = self
             .rsa_key_gen
-            .whatever_context("Missing RSA key option")?;
+            .context(client_build_error::MissingRsaKeyOptionSnafu)?;
 
         // Generate RSA key pair and secret
         let rsa_key = match rsa_key_gen {
             RsaKeyGen::BuilderGen(rsa_key_size) => {
-                RSAPrivKey::generate(rsa_key_size).whatever_context("RSA key generation failed")?
+                RSAPrivKey::generate(rsa_key_size).context(client_build_error::RsaGenSnafu)?
             }
             RsaKeyGen::UserProvided(rsa_key) => *rsa_key,
         };
         let pub_key = rsa_key
             .get_pub_key()
-            .whatever_context("Failed to get public key")?
+            .context(client_build_error::PubKeyExtractSnafu)?
             .b64_encode()
-            .whatever_context("Failed to encode public key")?;
+            .context(client_build_error::PubKeyEncodeSnafu)?;
         let secret = Uuid::new_v4().to_string();
 
         // Build the reqwest client
@@ -211,7 +215,7 @@ impl ClientBuilder {
 
         let reqwest_client = reqwest_client_builder
             .build()
-            .whatever_context("Failed to build the reqwest client")?;
+            .context(client_build_error::ReqwestBuildFailedSnafu)?;
 
         // Build the internal ServerComm object
         let server_comm = ServerComm {

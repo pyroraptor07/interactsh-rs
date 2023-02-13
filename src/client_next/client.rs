@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use async_lock::RwLock;
-use snafu::Whatever;
 
 #[cfg(feature = "log-stream")]
 use self::log_stream::*;
+use crate::client_shared::errors::*;
 use crate::client_shared::log_decrypt::decrypt_logs;
 use crate::client_shared::server_comm::ServerComm;
 use crate::crypto::rsa::RSAPrivKey;
@@ -26,7 +26,7 @@ mod log_stream {
 
 #[cfg(feature = "log-stream")]
 pub enum LogPollResult {
-    Error(Whatever),
+    Error(PollError),
     NoNewLogs,
     ReceivedNewLog(LogEntry),
 }
@@ -45,16 +45,21 @@ impl InteractshClient {
         comm.get_interaction_fqdn().map(|fqdn| fqdn.to_string())
     }
 
-    pub async fn register(&self) -> Result<String, Whatever> {
+    pub async fn register(&self) -> Result<String, ClientError> {
         let mut comm = self.server_comm.write().await;
-        let fqdn = comm.register().await?;
+        let fqdn = comm
+            .register()
+            .await
+            .context(client_error::RegistrationFailureSnafu)?;
 
         Ok(fqdn.to_string())
     }
 
-    pub async fn deregister(&self) -> Result<(), Whatever> {
+    pub async fn deregister(&self) -> Result<(), ClientError> {
         let mut comm = self.server_comm.write().await;
-        comm.deregister().await?;
+        comm.deregister()
+            .await
+            .context(client_error::DeregistrationFailureSnafu)?;
 
         Ok(())
     }
@@ -64,16 +69,15 @@ impl InteractshClient {
         comm.force_deregister().await;
     }
 
-    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, Whatever> {
+    pub async fn poll(&self) -> Result<Option<Vec<LogEntry>>, ClientError> {
         let response = {
             let comm = self.server_comm.read().await;
             comm.poll().await
-        };
-
-        match response {
-            Ok(response) => decrypt_logs(response, self.rsa_key.as_ref(), self.parse_logs),
-            Err(e) => Err(e),
         }
+        .context(client_error::PollFailureSnafu)?;
+
+        decrypt_logs(response, self.rsa_key.as_ref(), self.parse_logs)
+            .context(client_error::PollFailureSnafu)
     }
 
     /// Returns a [Stream](futures_util::Stream) that will poll the Interactsh server as long
@@ -111,7 +115,7 @@ impl InteractshClient {
                         break 'poll_loop;
                     }
 
-                    comm.poll().await.whatever_context("Poll failed")
+                    comm.poll().await
                 };
 
                 let mut return_vals = SmallVec::<[Option<R>; 1]>::new();
@@ -184,46 +188,17 @@ impl InteractshClient {
     pub fn log_stream(
         &self,
         poll_period: Duration,
-    ) -> impl Stream<Item = Result<LogEntry, Whatever>> {
+    ) -> impl Stream<Item = Result<LogEntry, ClientError>> {
         self.log_stream_filter_map(poll_period, |res| {
             match res {
                 LogPollResult::NoNewLogs => None,
                 LogPollResult::ReceivedNewLog(log) => Some(Ok(log)),
-                LogPollResult::Error(e) => Some(Err(e)),
+                LogPollResult::Error(e) => {
+                    let error = Err(e).context(client_error::PollFailureSnafu);
+
+                    Some(error)
+                }
             }
         })
     }
-}
-
-
-#[cfg(test)]
-mod tests {
-    // use std::time::Duration;
-
-    // use futures_util::{pin_mut, StreamExt};
-
-    // // use super::*;
-    // use crate::client_next::*;
-
-    // #[test]
-    // fn log_stream_works() {
-    //     let future = async {
-    //         color_eyre::install().ok();
-
-    //         let client = ClientBuilder::default().build().unwrap();
-    //         client.register().await.unwrap();
-
-    //         let interaction_url = format!("https://{}", client.get_interaction_fqdn().unwrap());
-    //         reqwest::get(interaction_url).await.unwrap();
-
-    //         let log_stream = client.log_stream(Duration::from_secs(5));
-    //         pin_mut!(log_stream);
-    //         let poll_result = log_stream.next().await;
-
-    //         assert!(poll_result.is_some());
-    //         client.force_deregister().await;
-    //     };
-
-    //     smol::block_on(future);
-    // }
 }
