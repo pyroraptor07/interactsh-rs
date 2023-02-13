@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use async_lock::RwLock;
+use snafu::ResultExt;
 
 #[cfg(feature = "log-stream")]
 use self::log_stream::*;
@@ -18,7 +19,6 @@ mod log_stream {
     pub use async_stream::stream;
     pub use futures_util::{Stream, StreamExt};
     pub use smallvec::SmallVec;
-    pub use snafu::ResultExt;
 
     pub use crate::client_shared::server_comm::ClientStatus;
 }
