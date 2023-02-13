@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_lock::RwLock;
+use cfg_if::cfg_if;
 use rand::seq::SliceRandom;
 use reqwest::Proxy;
 use secrecy::Secret;
@@ -30,11 +31,34 @@ enum RsaKeyGen {
     UserProvided(Box<RSAPrivKey>),
 }
 
+enum TlsOption {
+    #[cfg(feature = "rustls-tls")]
+    Rustls,
+    #[cfg(feature = "native-tls")]
+    Native,
+}
+
+impl Default for TlsOption {
+    fn default() -> Self {
+        cfg_if! {
+            if #[cfg(feature = "rustls-tls")] {
+                Self::Rustls
+            } else if #[cfg(feature = "native-tls")] {
+                Self::Native
+            } else {
+                panic!("A TLS feature option must be selected!")
+            }
+        }
+    }
+}
+
+#[allow(unused)]
 pub struct ClientBuilder {
     rsa_key_gen: Option<RsaKeyGen>,
     server: Option<String>,
     auth_token: Option<Secret<String>>,
     correlation_config: Option<CorrelationConfig>,
+    tls_option: TlsOption,
     proxies: Option<Vec<Proxy>>,
     timeout: Option<Duration>,
     ssl_verify: bool,
@@ -50,6 +74,7 @@ impl ClientBuilder {
             server: None,
             auth_token: None,
             correlation_config: None,
+            tls_option: TlsOption::default(),
             proxies: None,
             timeout: None,
             ssl_verify: false,
@@ -103,6 +128,28 @@ impl ClientBuilder {
     pub fn with_correlation_config(self, config: CorrelationConfig) -> Self {
         Self {
             correlation_config: Some(config),
+            ..self
+        }
+    }
+
+    /// Force the client to use reqwest's native TLS backend.
+    ///
+    /// Does nothing if only the `native-tls` TLS feature is enabled.
+    #[cfg(feature = "native-tls")]
+    pub fn use_native_tls(self) -> Self {
+        Self {
+            tls_option: TlsOption::Native,
+            ..self
+        }
+    }
+
+    /// Force the client to use reqwest's rustls TLS backend
+    ///
+    /// Does nothing if only the `rustls-tls` TLS feature is enabled.
+    #[cfg(feature = "rustls-tls")]
+    pub fn use_rustls_tls(self) -> Self {
+        Self {
+            tls_option: TlsOption::Rustls,
             ..self
         }
     }
@@ -196,11 +243,15 @@ impl ClientBuilder {
         let timeout = self.timeout.unwrap_or(Duration::from_secs(15));
         reqwest_client_builder = reqwest_client_builder.timeout(timeout);
 
-        cfg_if::cfg_if! {
+        cfg_if! {
             if #[cfg(all(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))] {
-                reqwest_client_builder = reqwest_client_builder.use_rustls_tls();
+                reqwest_client_builder = match self.tls_option {
+                    TlsOption::Native => reqwest_client_builder.use_native_tls(),
+                    TlsOption::Rustls => reqwest_client_builder.use_rustls_tls(),
+                };
             }
         }
+
 
         reqwest_client_builder =
             reqwest_client_builder.danger_accept_invalid_certs(!self.ssl_verify);
@@ -256,6 +307,7 @@ impl Default for ClientBuilder {
             server: Some(server.to_string()),
             auth_token: None,
             correlation_config: None,
+            tls_option: TlsOption::default(),
             proxies: None,
             timeout: Some(Duration::from_secs(15)),
             ssl_verify: false,

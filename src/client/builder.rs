@@ -1,5 +1,6 @@
 use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
+use cfg_if::cfg_if;
 
 use rand::distributions::{Alphanumeric, DistString};
 use rand::seq::SliceRandom;
@@ -23,11 +24,34 @@ const DEFAULT_INTERACTSH_SERVERS: &[&str] = &[
     // "oast.me",
 ];
 
+enum TlsOption {
+    #[cfg(feature = "rustls-tls")]
+    Rustls,
+    #[cfg(feature = "native-tls")]
+    Native,
+}
+
+impl Default for TlsOption {
+    fn default() -> Self {
+        cfg_if! {
+            if #[cfg(feature = "rustls-tls")] {
+                Self::Rustls
+            } else if #[cfg(feature = "native-tls")] {
+                Self::Native
+            } else {
+                panic!("A TLS feature option must be selected!")
+            }
+        }
+    }
+}
+
 /// Builds an [UnregisteredClient](crate::client::UnregisteredClient)
+#[allow(unused)]
 pub struct ClientBuilder {
     rsa_key_size: Option<usize>,
     server: Option<String>,
     auth_token: Option<Secret<String>>,
+    tls_option: TlsOption,
     proxies: Option<Vec<Proxy>>,
     timeout: Option<Duration>,
     ssl_verify: bool,
@@ -42,6 +66,7 @@ impl ClientBuilder {
             rsa_key_size: None,
             server: None,
             auth_token: None,
+            tls_option: TlsOption::default(),
             proxies: None,
             timeout: None,
             ssl_verify: false,
@@ -75,6 +100,28 @@ impl ClientBuilder {
         let token = Secret::new(auth_token);
         Self {
             auth_token: Some(token),
+            ..self
+        }
+    }
+
+    /// Force the client to use reqwest's native TLS backend.
+    ///
+    /// Does nothing if only the `native-tls` TLS feature is enabled.
+    #[cfg(feature = "native-tls")]
+    pub fn use_native_tls(self) -> Self {
+        Self {
+            tls_option: TlsOption::Native,
+            ..self
+        }
+    }
+
+    /// Force the client to use reqwest's rustls TLS backend
+    ///
+    /// Does nothing if only the `rustls-tls` TLS feature is enabled.
+    #[cfg(feature = "rustls-tls")]
+    pub fn use_rustls_tls(self) -> Self {
+        Self {
+            tls_option: TlsOption::Rustls,
             ..self
         }
     }
@@ -177,7 +224,10 @@ impl ClientBuilder {
 
         cfg_if::cfg_if! {
             if #[cfg(all(feature = "reqwest-rustls-tls", feature = "reqwest-native-tls"))] {
-                reqwest_client_builder = reqwest_client_builder.use_rustls_tls();
+                reqwest_client_builder = match self.tls_option {
+                    TlsOption::Native => reqwest_client_builder.use_native_tls(),
+                    TlsOption::Rustls => reqwest_client_builder.use_rustls_tls(),
+                };
             }
         }
 

@@ -10,6 +10,9 @@ repository = "https://github.com/pyroraptor07/interactsh-rs"
 keywords = ["interactsh", "oob-interactions"]
 
 
+[package.metadata.docs.rs]
+features = ["log-stream", "native-tls"]
+
 [features]
 default = ["rustcrypto", "rustls-tls", "async-compat"]
 

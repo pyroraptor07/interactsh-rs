@@ -60,7 +60,8 @@
 //! - `native-tls-vendored`
 //!
 //! One of these must be enabled as well to use the crate as a client.
-//! `rustls-tls` is enabled by default.
+//! `rustls-tls` is enabled by default. If both are enabled, `rustls-tls`
+//! will be used by default, but this can be overridden by the builder.
 //!
 //! Note: All 3 TLS feature flags can also be used currently with the "reqwest-"
 //! prefix. These were the original TLS feature flag names used in initial
