@@ -14,3 +14,8 @@
 /examples/cli_client_tokio_snafu/Cargo.lock
 /examples/cli_client_asyncstd/Cargo.lock
 /examples/cli_client_smol/Cargo.lock
+/._.idea
+/._Cargo.lock
+/._Cargo.toml
+/._crates
+/._target

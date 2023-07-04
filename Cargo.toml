@@ -1,9 +1,19 @@
-[package]
-name = "interactsh-rs"
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
 version = "0.3.0"
 edition = "2021"
 authors = ["Matt George <pyroraptor07@gmail.com>"]
 license = "MIT OR Apache-2.0"
+
+[package]
+name = "interactsh-rs"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
 description = "A Rust client library for working with Interact.sh servers"
 readme = "README.md"
 repository = "https://github.com/pyroraptor07/interactsh-rs"
