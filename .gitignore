@@ -1,8 +1,10 @@
+# Main project ignores
 /target
 /Cargo.lock
 /docker/local_server_old
 /.env
 
+# Ignore target folder and Cargo.lock files in example folders
 /examples/cli_client_shared/target
 /examples/cli_client_tokio/target
 /examples/cli_client_tokio_snafu/target
@@ -14,8 +16,16 @@
 /examples/cli_client_tokio_snafu/Cargo.lock
 /examples/cli_client_asyncstd/Cargo.lock
 /examples/cli_client_smol/Cargo.lock
+
+# Random junk files being added by MacOS
 /._.idea
 /._Cargo.lock
 /._Cargo.toml
 /._crates
 /._target
+/crates/interactsh-rs-client/._Cargo.toml
+/crates/interactsh-rs-crypto/._Cargo.toml
+/.idea/._interactsh-rs.iml
+/._README.md
+/.idea/._workspace.xml
+/._.gitignore
