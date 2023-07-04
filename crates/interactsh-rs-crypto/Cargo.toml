@@ -17,6 +17,7 @@ vendored = ["openssl?/vendored"]
 impl-deps = ["dep:base64", "dep:rand"]
 
 [dependencies]
+bytes = "1.4.0"
 snafu = "0.7.4"
 tap = "1.0"
 

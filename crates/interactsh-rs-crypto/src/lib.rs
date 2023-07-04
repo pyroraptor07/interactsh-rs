@@ -7,3 +7,5 @@ pub mod rsa;
 pub mod openssl;
 #[cfg(feature = "rustcrypto")]
 pub mod rustcrypto;
+
+pub use bytes;
