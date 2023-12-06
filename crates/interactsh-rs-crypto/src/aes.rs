@@ -13,14 +13,14 @@ pub trait AesDecryptor {
     /// Build the AES decryptor with the provided settings
     ///
     /// When implementing this, you should convert any errors to [CryptoError::AesDecryptorBuildError]
-    /// types (use [ToCryptoError::aes_decryptor_build_error](crate::error::ToCryptoError::aes_decryptor_build_error)
-    /// to streamline this).
-    fn new_with_settings(settings: Self::Settings) -> Result<Self, CryptoError>;
+    /// type.
+    fn new_with_settings(settings: Self::Settings) -> Result<Self, CryptoError>
+    where
+        Self: Sized;
 
     /// The primary AES decryption function
     ///
     /// When implementing this, you should convert any errors to [CryptoError::AesDecryptError]
-    /// types (use [ToCryptoError::aes_decrypt_error](crate::error::ToCryptoError::aes_decrypt_error)
-    /// to streamline this).
+    /// type.
     fn decrypt_data(&self, aes_key: Bytes, encrypted_data: Bytes) -> Result<Bytes, CryptoError>;
 }

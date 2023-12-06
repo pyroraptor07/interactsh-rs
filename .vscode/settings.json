@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./crates/interactsh-rs-crypto/Cargo.toml"
+    ]
+}
