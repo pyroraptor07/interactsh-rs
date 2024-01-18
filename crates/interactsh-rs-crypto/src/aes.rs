@@ -12,7 +12,7 @@ pub trait AesDecryptor {
 
     /// Build the AES decryptor with the provided settings
     ///
-    /// When implementing this, you should convert any errors to [CryptoError::AesDecryptorBuildError]
+    /// When implementing this, you should convert any errors to [CryptoError::AesDecryptorBuild]
     /// type.
     fn new_with_settings(settings: Self::Settings) -> Result<Self, CryptoError>
     where
@@ -20,7 +20,9 @@ pub trait AesDecryptor {
 
     /// The primary AES decryption function
     ///
-    /// When implementing this, you should convert any errors to [CryptoError::AesDecryptError]
+    /// When implementing this, you should convert any errors to [CryptoError::AesDecrypt]
     /// type.
     fn decrypt_data(&self, aes_key: Bytes, encrypted_data: Bytes) -> Result<Bytes, CryptoError>;
+
+    fn secure_drop(&mut self);
 }
