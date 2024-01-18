@@ -14,7 +14,9 @@ macro_rules! gen_crypto_error_helpers {
                         let inner = InnerError::from(msg.to_string());
                         $err_context.into_error(inner)
                     }
+                )+
 
+                $(
                     pub fn [<from_existing_to_ $sn_name>]<E, S>(err: E, msg: Option<S>) -> Self
                     where
                         E: StdError + Send + Sync + 'static,
@@ -75,10 +77,11 @@ macro_rules! gen_crypto_error_helpers {
     };
 }
 
-pub type BoxedStdError = Box<dyn StdError + Send + Sync>;
+type BoxedStdError = Box<dyn StdError + Send + Sync>;
 
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)))]
+#[doc(hidden)]
 pub enum InnerError {
     #[snafu(display("{msg}"))]
     Msg {
@@ -121,7 +124,8 @@ impl From<String> for InnerError {
 }
 
 /// The main error type that should be returned by any implementer of the
-/// [AesDecryptor](crate::aes::AesDecryptor) and XXX traits
+/// [AesDecryptor](crate::aes::AesDecryptor) and
+/// [PrivateKey](crate::priv_key::PrivateKey) traits
 #[derive(Debug, Snafu)]
 #[snafu(module, context(suffix(false)))]
 pub enum CryptoError {
