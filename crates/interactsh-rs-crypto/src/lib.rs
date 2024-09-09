@@ -1,7 +1,7 @@
 pub mod error;
 
 pub mod aes;
-pub mod priv_key;
+pub mod pkey;
 
 #[cfg(feature = "openssl")]
 pub mod openssl;

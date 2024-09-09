@@ -11,6 +11,7 @@ name = "interactsh_rs_crypto"
 path = "src/lib.rs"
 
 [features]
+default = ["rustcrypto", "openssl"]
 rustcrypto = ["dep:aes", "dep:cfb-mode", "dep:rsa", "dep:sha2", "impl-deps"]
 openssl = ["dep:openssl", "impl-deps"]
 vendored = ["openssl?/vendored"]
@@ -24,14 +25,14 @@ tap = "1.0"
 zeroize = "1.7.0"
 
 # Shared dependencies used for trait implementations
-base64 = { version = "0.21.2", optional = true }
+base64 = { version = "0.22.1", optional = true }
 rand = { version = "0.8.5", optional = true }
 
 # RustCrypto dependencies
 aes = { version = "0.8.3", optional = true }
 cfb-mode = { version = "0.8.2", optional = true }
-rsa = { version = "0.9.2", optional = true }
+rsa = { version = "0.9.1", optional = true }
 sha2 = { version = "0.10.7", optional = true }
 
 # Native crypto dependencies
-openssl = { version = "0.10.55", optional = true }
+openssl = { version = "0.10.54", optional = true }
